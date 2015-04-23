@@ -229,6 +229,15 @@ void Mesh::Load(const std::string &input_file) {
 
   std::cout << "Loaded " << numTriangles() << " triangles." << std::endl;
 
+  floorY = vertices[0]->getPos()[1];
+  for(int i = 0; i < vertices.size(); ++i) {
+    Vertex* v = vertices[i];
+    float y = v->getPos()[1];
+    if (y < floorY) {
+      floorY = y;
+    }
+  }
+
   assert (numTriangles() > 0);
   num_mini_triangles = 0;
 }
@@ -561,6 +570,9 @@ void Mesh::animate() {
         Vertex* v = vertices[j];
         glm::vec3 position = v->getPos();
         position += args->timestep * v->getVelocity();
+        if (position[1] < floorY) {
+          position[1] = floorY;
+        }
         v->setPos(position);
       }
     }

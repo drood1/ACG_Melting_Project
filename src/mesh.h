@@ -42,7 +42,7 @@ public:
   void setHeat(Vertex* vertex) {
     float heat = glm::distance(vertex->getPos(), heat_position) * 0.001;
     vertex->setHeat(heat);
-    std::cout << heat << std::endl;
+    // std::cout << heat << std::endl;
   }
 
   // ==================================================
@@ -120,6 +120,7 @@ private:
   MTRand_closed rand;
   std::set<Edge*> special_edges;
   glm::vec3 heat_position;
+  float floorY;
 
   GLuint mesh_VAO;
   GLuint mesh_tri_verts_VBO;
