@@ -23,10 +23,18 @@ public:
   double y() const { return position.y; }
   double z() const { return position.z; }
   const glm::vec3& getPos() const { return position; }
+  float getHeat() { return heat; }
+  glm::vec3 getVelocity() {
+    // Velocity is heat times gravity
+    glm::vec3 gravity(0.0f, -9.8f, 0.0f);
+    return heat * gravity;
+  }
+
 
   // =========
   // MODIFIERS
   void setPos(glm::vec3 v) { position = v; }
+  void setHeat(float h) { heat = h; }
 
 private:
 
@@ -38,6 +46,11 @@ private:
   // ==============
   // REPRESENTATION
   glm::vec3 position;
+  // Some value of heat/energy, Could probably just be temperature
+  // but for now I am using this as a fraction of gravity
+  // valid values are [0, 1]
+  // Velocity of vertex is modified using this
+  float heat;
 
   // this is the index from the original .obj file.
   // technically not part of the half-edge data structure, 

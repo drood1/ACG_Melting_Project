@@ -166,6 +166,9 @@ void Mesh::Load(const std::string &input_file) {
   int vert_count = 0;
   int vert_index = 1;
 
+  // TODO: maybe this shouldn't be hardcoded
+  heat_position = glm::vec3(0.1, 0.1, 0.1);
+
   // read in each line of the file
   while (istr.getline(line,MAX_CHAR_PER_LINE)) { 
     // put the line into a stringstream for parsing
@@ -177,14 +180,14 @@ void Mesh::Load(const std::string &input_file) {
     ss >> token;
     if (token == "") continue;
 
-    if (token == std::string("usemtl") ||
-	token == std::string("g")) {
+    if (token == std::string("usemtl") || token == std::string("g")) {
       vert_index = 1; 
       index++;
     } else if (token == std::string("v")) {
       vert_count++;
       ss >> x >> y >> z;
-      addVertex(glm::vec3(x,y,z));
+      Vertex* newVertex = addVertex(glm::vec3(x,y,z));
+      setHeat(newVertex);
     } else if (token == std::string("f")) {
       a = b = c = -1;
       ss >> a >> b;
@@ -547,6 +550,22 @@ void Mesh::cleanupVBOs() {
   glDeleteBuffers(1, &mesh_VAO);
   glDeleteBuffers(1, &mesh_tri_verts_VBO);
   glDeleteBuffers(1, &mesh_tri_indices_VBO);
+}
+
+// Animation function
+void Mesh::animate() {
+  if (args->animate) {
+    // do 10 steps of animation before rendering
+    for (int i = 0; i < 10; i++) {
+      for (int j = 0; j < vertices.size(); ++j) {
+        Vertex* v = vertices[j];
+        glm::vec3 position = v->getPos();
+        position += args->timestep * v->getVelocity();
+        v->setPos(position);
+      }
+    }
+  }
+  setupVBOs();
 }
 
 

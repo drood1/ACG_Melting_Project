@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <iostream>
 #include "hash.h"
 #include "boundingbox.h"
 #include "argparser.h"
@@ -38,6 +39,11 @@ public:
     Vertex *v = vertices[i];
     assert (v != NULL);
     return v; }
+  void setHeat(Vertex* vertex) {
+    float heat = glm::distance(vertex->getPos(), heat_position) * 0.001;
+    vertex->setHeat(heat);
+    std::cout << heat << std::endl;
+  }
 
   // ==================================================
   // PARENT VERTEX RELATIONSHIPS (used for subdivision)
@@ -71,6 +77,8 @@ public:
   void setupVBOs();
   void drawVBOs(const glm::mat4 &ProjectionMatrix,const glm::mat4 &ViewMatrix,const glm::mat4 &ModelMatrix);
   void cleanupVBOs();
+
+  void animate();
 
   void TriVBOHelper( std::vector<glm::vec3> &indexed_verts,
                      std::vector<unsigned int> &mesh_tri_indices,
@@ -111,6 +119,7 @@ private:
   int num_mini_triangles;
   MTRand_closed rand;
   std::set<Edge*> special_edges;
+  glm::vec3 heat_position;
 
   GLuint mesh_VAO;
   GLuint mesh_tri_verts_VBO;

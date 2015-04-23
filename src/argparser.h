@@ -49,7 +49,7 @@ public:
   ArgParser(int argc, char *argv[]) {
     DefaultValues();
     for (int i = 1; i < argc; i++) {
-
+      // TODO(austin): add timestep here
       if (std::string(argv[i]) == std::string("-input") || 
           std::string(argv[i]) == std::string("-i")) {
         i++; assert (i < argc); 
@@ -73,6 +73,8 @@ public:
     height = 500;
     wireframe = 0;
     gouraud = false;
+    animate = false;
+    timestep = 0.001;
   }
 
   // ==============
@@ -85,6 +87,8 @@ public:
   GLint wireframe;
   bool gouraud;
   MTRand mtrand;
+  bool animate;
+  float timestep;
 
 };
 

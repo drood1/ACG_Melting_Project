@@ -112,6 +112,7 @@ void GLCanvas::initialize(ArgParser *_args, Mesh *_mesh) {
   HandleGLError("finished glcanvas initialize");
 }
 
+
 // ========================================================
 // Callback function for mouse click or release
 // ========================================================
@@ -201,6 +202,18 @@ void GLCanvas::keyboardCB(GLFWwindow* window, int key, int scancode, int action,
   // other normal ascii keys...
   if (action == GLFW_PRESS && key < 256) {
     switch (key) {
+    case 'a': case 'A':
+      // toggle continuous animation
+      args->animate = !args->animate;
+      if (args->animate) 
+        printf ("animation started, press 'A' to stop\n");
+      else
+        printf ("animation stopped, press 'A' to start\n");
+      break;
+   case ' ':
+      // a single step of animation
+      // TODO(austin): fill this in
+      break; 
     case 'w':  case 'W':
       args->wireframe = !args->wireframe;
       mesh->setupVBOs();

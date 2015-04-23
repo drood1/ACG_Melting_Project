@@ -62,6 +62,7 @@ int main(int argc, char *argv[]) {
     glm::mat4 ViewMatrix = GLCanvas::camera->getViewMatrix();
 
     mesh.drawVBOs(ProjectionMatrix,ViewMatrix,ModelMatrix);
+    mesh.animate();
 
     // Swap buffers
     glfwSwapBuffers(GLCanvas::window);
