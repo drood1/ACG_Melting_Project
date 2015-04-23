@@ -115,8 +115,7 @@ void Camera::rotateCamera(float rx, float ry) {
 
   // Note: There is a singularity at the poles (0 & 180 degrees) when
   // 'up' and 'direction' are aligned
-  //float tiltAngle = acos(glm::dot(up,getDirection())) * 180 / glm::pi<float>();
-  float tiltAngle = acos(glm::dot(up,getDirection())) * 180 / 3.1419;
+  float tiltAngle = acos(glm::dot(up,getDirection())) * 180 / glm::pi<float>();
   if (tiltAngle-ry > 178.0) 
     ry = tiltAngle - 178.0; 
   else if (tiltAngle-ry < 2.0) 

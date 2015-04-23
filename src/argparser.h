@@ -1,10 +1,10 @@
 #ifndef __ARG_PARSER_H__
 #define __ARG_PARSER_H__
 
-#include <cassert>
 #include <string>
-#include <glm/glm.hpp>
+#include <cassert>
 #include "mtrand.h"
+
 
 // ================================================================================
 // ================================================================================
@@ -45,102 +45,49 @@ class ArgParser {
 public:
 
   ArgParser() { DefaultValues(); }
-
+  
   ArgParser(int argc, char *argv[]) {
     DefaultValues();
-
     for (int i = 1; i < argc; i++) {
-      if (argv[i] == std::string("-cloth")) {
+
+      if (std::string(argv[i]) == std::string("-input") || 
+          std::string(argv[i]) == std::string("-i")) {
         i++; assert (i < argc); 
-        separatePathAndFile(argv[i],path,cloth_file);
-      } else if (argv[i] == std::string("-fluid")) {
-	i++; assert (i < argc); 	
-        separatePathAndFile(argv[i],path,fluid_file);
+        separatePathAndFile(argv[i],path,input_file);
       } else if (argv[i] == std::string("-size")) {
         i++; assert (i < argc); 
-	width = height = atoi(argv[i]);
-      } else if (argv[i] == std::string("-timestep")) {
-	i++; assert (i < argc); 
-	timestep = atof(argv[i]);
-        assert (timestep > 0);
+        width = height = atoi(argv[i]);
+      } else if (argv[i] == std::string("-wireframe")) {
+        wireframe = 1;
+      } else if (argv[i] == std::string("-gouraud")) {
+        gouraud = true;
       } else {
-	printf ("whoops error with command line argument %d: '%s'\n",i,argv[i]);
-	assert(0);
+        printf ("whoops error with command line argument %d: '%s'\n",i,argv[i]);
+        assert(0);
       }
     }
   }
 
-  // ===================================
-  // ===================================
-
   void DefaultValues() {
     width = 500;
     height = 500;
-
-    timestep = 0.01;
-    animate = false;
-
-    particles = true;
-    velocity = true;
-    force = true;
-
-    face_velocity = 0;
-    dense_velocity = 0;
-
-    surface = false;
-    isosurface = 0.7;
-
-    wireframe = false;
-    bounding_box = true;
-    cubes = false;
-    pressure = false;
-
-    gravity = glm::vec3(0,-9.8,0);
-
-    // uncomment for deterministic randomness
-    // mtrand = MTRand(37);
-    
+    wireframe = 0;
+    gouraud = false;
   }
 
-  // ===================================
-  // ===================================
+  // ==============
   // REPRESENTATION
   // all public! (no accessors)
-
-  std::string cloth_file;
-  std::string fluid_file;
+  std::string input_file;
   std::string path;
   int width;
   int height;
-
-  // animation control
-  double timestep;
-  bool animate;
-  glm::vec3 gravity;
-
-  // display option toggles 
-  // (used by both)
-  bool particles;
-  bool velocity;
-  bool surface;
-  bool bounding_box;
-
-  // used by cloth
-  bool force;
-  bool wireframe;  
-
-  // used by fluid
-  int face_velocity;
-  int dense_velocity;
-  double isosurface;
-  bool cubes;
-  bool pressure;
-
-  // default initialization
+  GLint wireframe;
+  bool gouraud;
   MTRand mtrand;
 
 };
 
-// ================================================================================
+// ====================================================================================
 
 #endif

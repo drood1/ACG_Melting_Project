@@ -1,9 +1,10 @@
-HOMEWORK 2: CLOTH & FLUID SIMULATION
-
-NAME: Austin Gulati
+HOMEWORK 1: SIMPLIFICATION & SUBDIVISION
 
 
-TOTAL TIME SPENT: 30
+NAME:  Austin Gulati
+
+
+TOTAL TIME SPENT:  12
 Please estimate the number of hours you spent on this assignment.
 
 
@@ -12,40 +13,52 @@ talked to about this assignment and all of the resources (books,
 online reference material, etc.) you consulted in completing this
 assignment.
 
+n/a
+
 Remember: Your implementation for this assignment must be done on your
 own, as described in "Academic Integrity for Homework" handout.
 
 
-DISCUSS STABILITY OF YOUR CLOTH SIMULATION:
 
-Run with timesteps 10x:
-./simulation -cloth ../src/small_cloth.txt -timestep 0.01
-./simulation -cloth ../src/provot_original.txt -timestep 0.01
-./simulation -cloth ../src/provot_correct_structural.txt -timestep 0.01
-./simulation -cloth ../src/provot_correct_structural_and_shear.txt -timestep 0.01
+GOURAUD SHADING EFFICIENCY/PERFORMANCE:
 
-The velocities seem to get out of control and the cloth wiggles around a bit but other than that it's fairly stable.
+t=# of triangles
+a=average # of triangles adjacent to each vertex
 
-DESCRIBE YOUR NEW CLOTH TEST SCENE & 
-THE COMMAND LINE TO RUN YOUR EXAMPLE:
+O(ta)
 
-It is similar to the square table but is a round table
+The shading algorithm requires work to be done for each triangle.
+The work that is done for each triangle involves computing the normal
+for each adjacent triangle. This happens three times. The runtime of
+this inner step is the average number of triangles adjancent to each vertex.
 
-./simulation -cloth ../src/table_round.txt -timestep 0.01
+SIMPLIFICATION/EDGE COLLAPSE NOTES:
 
-DISCUSS THE ACCURACY & STABILITY OF YOUR FLUID SIMULATION:
+I collapse the shortest edge. I find the shortest edge using the slow
+linear search. It is very slow for large meshes
 
-Fairly accurate, one water point doesn't move in the drop simulation but other than that I think things are working normally.
-Velocities get out of control eventually on some of the simulations.
+To check if a collapse is legal, I check the number of points in common
+between the modified triangles connected to the start vertex and end vertex.
+If it is >2, there is a shared vertex, and we skip that edge.
+Before implementing this, I was getting some blue stuff, now I am not
+
+When simplifying a mesh with boundaries, at some point the boundary breaks
+and this messes up the whole process
+
+SUBDIVISION NOTES:
+
+I believe that I handle valence 6 and extraordinary vertices correctly
+even though my code does nothing special to handle that. I use a B=(3/(8n))
+calculation which works for both cases
+
+I wasn't able to fully get the crease rules working
 
 KNOWN BUGS IN YOUR CODE:
 Please be concise!
 
-Timesteps adjusted on cloth
-One water point does not move on fluid_drop.txt
+Unable to simplify meshes with boundaries
+Crease rules don't work
 
 
 NEW FEATURES OR EXTENSIONS FOR EXTRA CREDIT:
 Include instructions for use and test cases and sample output as appropriate.
-
-N/A

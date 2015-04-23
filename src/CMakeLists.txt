@@ -1,36 +1,20 @@
 cmake_minimum_required (VERSION 2.8)
-project (hw2)
+project (hw1)
 
-set(my_executable simulation)
+set(my_executable mesher)
 
 # toggle for building a 32 bit version (for Dr. Memory)
 set(BUILD_32 "")
 #set(BUILD_32 " -m32 ")
 
 # all the .cpp files that make up this project
-add_executable(${my_executable} 
+add_executable(${my_executable}
   main.cpp
-  mtrand.h
+  glCanvas.cpp    
+  camera.cpp  	       
+  mesh.cpp
+  edge.cpp
   mtrand.cpp
-  argparser.h
-  utils.h
-  utils.cpp
-  camera.h
-  camera.cpp
-  glCanvas.h
-  glCanvas.cpp
-  vbo_structs.h
-  boundingbox.h
-  boundingbox.cpp
-  cloth.h
-  cloth.cpp
-  cloth_render.cpp
-  fluid.h
-  cell.h
-  fluid.cpp
-  fluid_render.cpp
-  marching_cubes.h
-  marching_cubes.cpp
 )
 
 # http://glm.g-truc.net/0.9.5/updates.html

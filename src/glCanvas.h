@@ -12,11 +12,8 @@
 #include <cassert>
 #include <string>
 
-#include "boundingbox.h"
-
 class ArgParser;
-class Cloth;
-class Fluid;
+class Mesh;
 class Camera;
 
 // ====================================================================
@@ -29,9 +26,7 @@ public:
 
   // various static variables
   static ArgParser *args;
-  static Cloth* cloth;
-  static Fluid* fluid;
-  static BoundingBox bbox;
+  static Mesh *mesh;
   static Camera* camera;
   static GLFWwindow* window;
 
@@ -40,7 +35,6 @@ public:
   static GLuint LightID;
   static GLuint MatrixID;
   static GLuint programID;
-  static GLuint colormodeID;
   static GLuint wireframeID;
   
   // mouse position
@@ -56,16 +50,7 @@ public:
   static bool altKeyPressed;
   static bool superKeyPressed;
 
-  static GLuint simulation_VAO;
-
-  static void initialize(ArgParser *_args);
-  static void Load();
-  static void initializeVBOs();
-  static void setupVBOs();
-  static void drawVBOs(const glm::mat4 &ProjectionMatrix,const glm::mat4 &ViewMatrix,const glm::mat4 &ModelMatrix);
-  static void cleanupVBOs();
-
-  static void animate();
+  static void initialize(ArgParser *_args, Mesh *_mesh);
 
   // Callback functions for mouse and keyboard events
   static void mousebuttonCB(GLFWwindow *window, int which_button, int action, int mods);

@@ -6,13 +6,11 @@
 
 #include <cassert>
 #include <algorithm>
-#include <vector>
-
-#include "vbo_structs.h"
 
 // needed by Windows
 // allows us to use std::min & std::max
 #define NOMINMAX
+
 // ====================================================================
 // ====================================================================
 
@@ -24,8 +22,6 @@ public:
   // CONSTRUCTOR & DESTRUCTOR
   BoundingBox() { 
     Set(glm::vec3(0,0,0),glm::vec3(0,0,0)); }
-  BoundingBox(const glm::vec3 &pos) {
-    Set(pos,pos); }
   BoundingBox(const glm::vec3 &_minimum, const glm::vec3 &_maximum) { 
     Set(_minimum,_maximum); }
 
@@ -73,24 +69,12 @@ public:
     Extend(bb.maximum); 
   }
 
-  void initializeVBOs();
-  void setupVBOs();
-  void drawVBOs();
-  void cleanupVBOs();
-
 private:
-
 
   // ==============
   // REPRESENTATION
   glm::vec3 minimum;
   glm::vec3 maximum;
-
-  GLuint bb_verts_VBO;
-  GLuint bb_tri_indices_VBO;
-  std::vector<VBOPosNormalColor> bb_verts;
-  std::vector<VBOIndexedTri> bb_tri_indices; // actually triangles
-
 };
 
 // ====================================================================
