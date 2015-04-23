@@ -40,7 +40,8 @@ public:
     assert (v != NULL);
     return v; }
   void setHeat(Vertex* vertex) {
-    float heat = glm::distance(vertex->getPos(), heat_position) * 0.001;
+    float distance = glm::distance(vertex->getPos(), heat_position);
+    float heat = distance * distance * 0.001;
     vertex->setHeat(heat);
     // std::cout << heat << std::endl;
   }
