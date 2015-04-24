@@ -222,14 +222,6 @@ void GLCanvas::keyboardCB(GLFWwindow* window, int key, int scancode, int action,
       args->gouraud = !args->gouraud;
       mesh->setupVBOs();
       break;
-    case 's': case 'S':
-      mesh->LoopSubdivision();
-      mesh->setupVBOs();
-      break;
-    case 'd': case 'D':
-      mesh->Simplification((int)floor(0.9*mesh->numTriangles()));
-      mesh->setupVBOs();
-      break;
     case 'q':  case 'Q':
       exit(0);
       break;

@@ -41,7 +41,8 @@ public:
     return v; }
   void setHeat(Vertex* vertex) {
     float distance = glm::distance(vertex->getPos(), heat_position);
-    float heat = distance * distance * 0.001;
+    // std::cout << args->mtrand() << std::endl;
+    float heat = distance * distance * 0.005;
     vertex->setHeat(heat);
     // std::cout << heat << std::endl;
   }
@@ -92,15 +93,6 @@ public:
                      const glm::vec3 &color_ab,
                      const glm::vec3 &color_bc,
                      const glm::vec3 &color_ca);
-
-  // ==========================
-  // MESH PROCESSING OPERATIONS
-  void LoopSubdivision();
-  void Simplification(int target_tri_count);
-
-  // CUSTOM
-  std::vector<Vertex*> AddRemoveTriangles(Edge* starting, std::vector<Triangle*>& to_remove, std::vector<Vertex**>& to_add, Vertex* new_vertex, Triangle* left_triangle, Triangle* right_triangle, Vertex* left_vertex, Vertex* right_vertex);
-  void AttemptAddTriangle(Vertex* a, Vertex* b, Vertex* c);
 
 private:
 
