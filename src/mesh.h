@@ -11,6 +11,7 @@
 #include "./boundingbox.h"
 #include "./argparser.h"
 #include "./mtrand.h"
+#include "./vbo_structs.h"
 
 
 class Vertex;
@@ -57,7 +58,6 @@ class Mesh {
   int numEdges() const { return edges.size(); }
   // this efficiently looks for an edge with the given vertices, using a hash table
   Edge* getMeshEdge(Vertex *a, Vertex *b) const;
-  glm::vec3 EdgeColor(Edge *e);
 
   // =========
   // TRIANGLES
@@ -71,24 +71,16 @@ class Mesh {
 
   // ===+=====
   // RENDERING
+
+  // NEW RENDERING
   void initializeVBOs();
   void setupVBOs();
+  void SetupMesh();
+  void SetupHeat();
   void drawVBOs(const glm::mat4 &ProjectionMatrix,
     const glm::mat4 &ViewMatrix, const glm::mat4 &ModelMatrix);
   void cleanupVBOs();
   void animate();
-
-  void TriVBOHelper(std::vector<glm::vec3> &indexed_verts,
-                    std::vector<unsigned int> &mesh_tri_indices,
-                    const glm::vec3 &pos_a,
-                    const glm::vec3 &pos_b,
-                    const glm::vec3 &pos_c,
-                    const glm::vec3 &normal_a,
-                    const glm::vec3 &normal_b,
-                    const glm::vec3 &normal_c,
-                    const glm::vec3 &color_ab,
-                    const glm::vec3 &color_bc,
-                    const glm::vec3 &color_ca);
 
  private:
   // don't use these constructors
@@ -114,6 +106,8 @@ class Mesh {
   GLuint mesh_tri_indices_VBO;
   GLuint heat_vert_VBO;
 
+  std::vector<VBOPosNormalColor> mesh_tri_verts; 
+  std::vector<VBOIndexedTri> mesh_tri_indices;
   std::vector<VBOPosNormalColor> heat_vert;
 };
 

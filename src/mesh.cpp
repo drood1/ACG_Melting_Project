@@ -209,7 +209,7 @@ void Mesh::Load(const std::string &input_file) {
   std::cout << "Loaded " << numTriangles() << " triangles." << std::endl;
 
   floorY = vertices[0]->getPos()[1];
-  for (int i = 0; i < vertices.size(); ++i) {
+  for (unsigned int i = 0; i < vertices.size(); ++i) {
     Vertex* v = vertices[i];
     float y = v->getPos()[1];
     if (y < floorY) {
@@ -236,6 +236,43 @@ glm::vec3 ComputeNormal(const glm::vec3 &p1, const glm::vec3 &p2, const glm::vec
   return normal;
 }
 
+void Mesh::SetupMesh() {
+  mesh_tri_verts.clear();
+  mesh_tri_indices.clear();
+  glm::vec4 mesh_color(0.645, 0.164, 0.164, 1.0);
+  for (triangleshashtype::iterator iter = triangles.begin();
+       iter != triangles.end(); iter++) {
+    Triangle *t = iter->second;
+    glm::vec3 a = (*t)[0]->getPos();
+    glm::vec3 b = (*t)[1]->getPos();
+    glm::vec3 c = (*t)[2]->getPos();
+    glm::vec3 na = ComputeNormal(a,b,c);
+    glm::vec3 nb = na;
+    glm::vec3 nc = na;
+    int start = mesh_tri_verts.size();
+    mesh_tri_verts.push_back(VBOPosNormalColor(a,na,mesh_color));
+    mesh_tri_verts.push_back(VBOPosNormalColor(b,nb,mesh_color));
+    mesh_tri_verts.push_back(VBOPosNormalColor(c,nc,mesh_color));
+    mesh_tri_indices.push_back(VBOIndexedTri(start,start+1,start+2));
+  }
+  glBindBuffer(GL_ARRAY_BUFFER,mesh_tri_verts_VBO); 
+  glBufferData(GL_ARRAY_BUFFER,
+         sizeof(VBOPosNormalColor) * mesh_tri_verts.size(), 
+         &mesh_tri_verts[0],
+         GL_STATIC_DRAW); 
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,mesh_tri_indices_VBO); 
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+         sizeof(VBOIndexedTri) * mesh_tri_indices.size(),
+         &mesh_tri_indices[0], GL_STATIC_DRAW);
+}
+
+void Mesh::SetupHeat() {
+  heat_vert.clear();
+  heat_vert.push_back(VBOPosNormalColor(heat_position, glm::vec3(1, 1, 1), glm::vec4(1, 0, 0, 1)));
+  glBindBuffer(GL_ARRAY_BUFFER, heat_vert_VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(VBOPosNormalColor)*1,
+    &heat_vert[0], GL_STATIC_DRAW);
+}
 
 void Mesh::initializeVBOs() {
   HandleGLError("enter initialize VBOs");
@@ -246,6 +283,7 @@ void Mesh::initializeVBOs() {
   glGenBuffers(1, &mesh_tri_verts_VBO);
   glGenBuffers(1, &mesh_tri_indices_VBO);
   glGenBuffers(1, &heat_vert_VBO);
+
   // and the data to pass to the shaders
   GLCanvas::MatrixID = glGetUniformLocation(GLCanvas::programID, "MVP");
   GLCanvas::LightID = glGetUniformLocation(GLCanvas::programID, "LightPosition_worldspace");
@@ -259,217 +297,10 @@ void Mesh::initializeVBOs() {
   HandleGLError("leaving initializeVBOs");
 }
 
-
-// boundary edges are red, crease edges are yellow
-glm::vec3 Mesh::EdgeColor(Edge *e) {
-  if (special_edges.size() > 0 && special_edges.count(e) != 0) {
-    std::cout << "SEPCI" << std::endl;
-    return glm::vec3(0, 1, 0);
-  } else if (e->getOpposite() == NULL) {
-    return glm::vec3(1, 0, 0);
-  } else if (e->getCrease() > 0) {
-    return glm::vec3(1, 1, 0);
-  } else {
-    return glm::vec3(0, 0, 0.0);
-  }
-  return glm::vec3(0, 0, 0.0);
-}
-
-
-void Mesh::TriVBOHelper(std::vector<glm::vec3> &indexed_verts,
-                        std::vector<unsigned int> &mesh_tri_indices,
-                        const glm::vec3 &pos_a,
-                        const glm::vec3 &pos_b,
-                        const glm::vec3 &pos_c,
-                        const glm::vec3 &normal_a,
-                        const glm::vec3 &normal_b,
-                        const glm::vec3 &normal_c,
-                        const glm::vec3 &color_ab,
-                        const glm::vec3 &color_bc,
-                        const glm::vec3 &color_ca) {
-  /*
-  // To create a wireframe rendering...
-  // Each mesh triangle is actually rendered as 3 small triangles
-  //           b
-  //          /|\
-  //         / | \
-  //        /  |  \
-  //       /   |   \
-  //      /    |    \
-  //     /    .'.    \
-  //    /  .'     '.  \
-  //   /.'           '.\
-  //  a-----------------c
-  //
-  */
-
-  // the center is white, the colors of the two vertices depend on
-  // whether the edge is a boundary edge (red) or crease edge (yellow)
-  glm::vec3 center_color(1, 1, 1);
-  // use simple averaging to find centroid & average normal
-  glm::vec3 centroid = 1.0f / 3.0f * (pos_a + pos_b + pos_c);
-  glm::vec3 normal = normal_a + normal_b + normal_c;
-  normal = glm::normalize(normal);
-  int i = indexed_verts.size()/3;
-
-  if (args->wireframe) {
-    // WIREFRAME
-    // make the 3 small triangles
-    indexed_verts.push_back(pos_a);
-    indexed_verts.push_back(normal_a);
-    indexed_verts.push_back(color_ab);
-    indexed_verts.push_back(pos_b);
-    indexed_verts.push_back(normal_b);
-    indexed_verts.push_back(color_ab);
-    indexed_verts.push_back(centroid);
-    indexed_verts.push_back(normal);
-    indexed_verts.push_back(center_color);
-
-    indexed_verts.push_back(pos_b);
-    indexed_verts.push_back(normal_b);
-    indexed_verts.push_back(color_bc);
-    indexed_verts.push_back(pos_c);
-    indexed_verts.push_back(normal_c);
-    indexed_verts.push_back(color_bc);
-    indexed_verts.push_back(centroid);
-    indexed_verts.push_back(normal);
-    indexed_verts.push_back(center_color);
-
-    indexed_verts.push_back(pos_c);
-    indexed_verts.push_back(normal_c);
-    indexed_verts.push_back(color_ca);
-    indexed_verts.push_back(pos_a);
-    indexed_verts.push_back(normal_a);
-    indexed_verts.push_back(color_ca);
-    indexed_verts.push_back(centroid);
-    indexed_verts.push_back(normal);
-    indexed_verts.push_back(center_color);
-
-    // add all of the triangle vertices to the indices list
-    for (int j = 0; j < 9; j++) {
-      mesh_tri_indices.push_back(i+j);
-    }
-  } else {
-    // NON WIREFRAME
-    // Note: gouraud shading with the mini triangles looks bad... :(
-
-    // make the 3 small triangles
-    indexed_verts.push_back(pos_a);
-    indexed_verts.push_back(normal_a);
-    indexed_verts.push_back(center_color);
-    indexed_verts.push_back(pos_b);
-    indexed_verts.push_back(normal_b);
-    indexed_verts.push_back(center_color);
-    indexed_verts.push_back(pos_c);
-    indexed_verts.push_back(normal_c);
-    indexed_verts.push_back(center_color);
-
-    // add all of the triangle vertices to the indices list
-    for (int j = 0; j < 3; j++) {
-      mesh_tri_indices.push_back(i+j);
-    }
-  }
-}
-
 void Mesh::setupVBOs() {
   HandleGLError("enter setupVBOs");
-
-  std::vector<glm::vec3> indexed_verts;
-  std::vector<unsigned int> mesh_tri_indices;
-
-  // write the vertex & triangle data
-  for (triangleshashtype::iterator iter = triangles.begin();
-       iter != triangles.end(); iter++) {
-    Triangle *t = iter->second;
-
-    // grab the vertex positions
-    glm::vec3 a = (*t)[0]->getPos();
-    glm::vec3 b = (*t)[1]->getPos();
-    glm::vec3 c = (*t)[2]->getPos();
-
-    // determine edge colors (when wireframe is enabled)
-    glm::vec3 edgecolor_ab = EdgeColor(t->getEdge());
-    glm::vec3 edgecolor_bc = EdgeColor(t->getEdge()->getNext());
-    glm::vec3 edgecolor_ca = EdgeColor(t->getEdge()->getNext()->getNext());
-
-    if (args->gouraud) {
-      // =====================================
-      // ASSIGNMENT: complete this functionality
-      // =====================================
-
-      Edge *starting = t->getEdge();
-      Edge *current = starting;
-      glm::vec3 normal_a(0, 0, 0);
-      float triangles = 0.0f;
-
-      while (triangles == 0 ||
-        ((current != starting) && current != NULL)) {
-        Triangle *triangle = current->getTriangle();
-        normal_a += ComputeNormal((*triangle)[0]->getPos(),
-          (*triangle)[1]->getPos(), (*triangle)[2]->getPos());
-        current = current->getNext()->getNext()->getOpposite();
-        triangles++;
-      }
-      normal_a = normal_a / triangles;
-
-      glm::vec3 normal_b(0, 0, 0);
-      triangles = 0.0f;
-      starting = t->getEdge()->getNext();
-      current = starting;
-      while (triangles == 0 ||
-        ((current != starting) && current != NULL)) {
-        Triangle *triangle = current->getTriangle();
-        normal_b += ComputeNormal((*triangle)[0]->getPos(),
-          (*triangle)[1]->getPos(), (*triangle)[2]->getPos());
-        current = current->getNext()->getNext()->getOpposite();
-        triangles++;
-      }
-      normal_b = normal_b / triangles;
-
-      glm::vec3 normal_c(0, 0, 0);
-      triangles = 0.0f;
-      starting = t->getEdge()->getNext()->getNext();
-      current = starting;
-      while (triangles == 0 || ((current != starting) && current != NULL)) {
-        Triangle *triangle = current->getTriangle();
-        normal_c += ComputeNormal((*triangle)[0]->getPos(),
-          (*triangle)[1]->getPos(), (*triangle)[2]->getPos());
-        current = current->getNext()->getNext()->getOpposite();
-        triangles++;
-      }
-      normal_c = normal_c / triangles;
-      TriVBOHelper(indexed_verts, mesh_tri_indices,
-                   a, b, c,
-                   normal_a, normal_b, normal_c,
-                   edgecolor_ab, edgecolor_bc, edgecolor_ca);
-    } else {
-      // for flat shading, use the triangle normal at each vertex
-      // use the normal of the triangl
-      glm::vec3 normal = ComputeNormal(a, b, c);
-      TriVBOHelper(indexed_verts, mesh_tri_indices,
-                   a, b, c,
-                   normal, normal, normal,
-                   edgecolor_ab, edgecolor_bc, edgecolor_ca);
-    }
-  }
-
-  // the vertex data
-  glBindBuffer(GL_ARRAY_BUFFER, mesh_tri_verts_VBO);
-  glBufferData(GL_ARRAY_BUFFER, indexed_verts.size() * sizeof(glm::vec3),
-    &indexed_verts[0], GL_STATIC_DRAW);
-  // the index data (refers to vertex data)
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_tri_indices_VBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh_tri_indices.size() * sizeof(unsigned int),
-    &mesh_tri_indices[0] , GL_STATIC_DRAW);
-
-  num_mini_triangles = mesh_tri_indices.size();
-
-  heat_vert.clear();
-  heat_vert.push_back(VBOPosNormalColor(heat_position, glm::vec3(1, 0, 0), glm::vec4(1, 1, 0, 0)));
-  glBindBuffer(GL_ARRAY_BUFFER, heat_vert_VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(VBOPosNormalColor)*1,
-    &heat_vert[0], GL_STATIC_DRAW);
-
+  SetupMesh();
+  SetupHeat();
   HandleGLError("leaving setupVBOs");
 }
 
@@ -488,47 +319,23 @@ void Mesh::drawVBOs(const glm::mat4 &ProjectionMatrix,
   glUniformMatrix4fv(GLCanvas::ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
   glUniform1i(GLCanvas::wireframeID, args->wireframe);
 
-  // triangle vertex positions
-  glBindBuffer(GL_ARRAY_BUFFER, mesh_tri_verts_VBO);
+  HandleGLError("enter draw mesh");
+  glBindBuffer(GL_ARRAY_BUFFER,mesh_tri_verts_VBO); 
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,mesh_tri_indices_VBO); 
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0,  // attribute
-      3,                    // size
-      GL_FLOAT,             // type
-      GL_FALSE,             // normalized?
-      3*sizeof(glm::vec3),  // stride
-      reinterpret_cast<void*>(0));  // array buffer offset
-
-  // triangle vertex normals
+  glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(VBOPosNormalColor),(void*)0);
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1,    // attribute
-      3,                      // size
-      GL_FLOAT,               // type
-      GL_FALSE,               // normalized?
-      3*sizeof(glm::vec3),    // stride
-      reinterpret_cast<void*>(sizeof(glm::vec3)));
-      // array buffer offset
-  // triangle vertex colors
+  glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(VBOPosNormalColor),(void*)sizeof(glm::vec3) );
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2,        // attribute
-      3,                          // size
-      GL_FLOAT,                   // type
-      GL_FALSE,                   // normalized?
-      3*sizeof(glm::vec3),        // stride
-      reinterpret_cast<void*>(sizeof(glm::vec3)*2));
-      // array buffer offset
-  // triangle indices
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_tri_indices_VBO);
-  glDrawElements(GL_TRIANGLES,          // mode
-                 num_mini_triangles*3,  // count
-                 GL_UNSIGNED_INT,       // type
-                 reinterpret_cast<void*>(0));
-                 // element array buffer offset
+  glVertexAttribPointer(2, 3, GL_FLOAT,GL_FALSE,sizeof(VBOPosNormalColor), (void*)(sizeof(glm::vec3)*2));
+  glDrawElements(GL_TRIANGLES, mesh_tri_indices.size()*3,GL_UNSIGNED_INT, 0);
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
   glDisableVertexAttribArray(2);
+  HandleGLError("leaving draw mesh");
 
   HandleGLError("enter draw heat");
-  glPointSize(25);
+  glPointSize(20);
   glBindBuffer(GL_ARRAY_BUFFER, heat_vert_VBO);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
@@ -560,8 +367,8 @@ void Mesh::cleanupVBOs() {
 void Mesh::animate() {
   if (args->animate) {
     // do 10 steps of animation before rendering
-    for (int i = 0; i < 10; i++) {
-      for (int j = 0; j < vertices.size(); ++j) {
+    for (unsigned int i = 0; i < 10; i++) {
+      for (unsigned int j = 0; j < vertices.size(); ++j) {
         Vertex* v = vertices[j];
         glm::vec3 position = v->getPos();
         position += args->timestep * v->getVelocity();

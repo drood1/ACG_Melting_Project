@@ -95,7 +95,7 @@ void GLCanvas::initialize(ArgParser *_args, Mesh *_mesh) {
   HandleGLError("after glewInit()", true);
 
   std::cout << "-------------------------------------------------------" << std::endl;
-  std::cout << "OpenGL Version: " << static_cast<char*>(glGetString(GL_VERSION)) << std::endl;
+  std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
   std::cout << "-------------------------------------------------------" << std::endl;
 
   // Initialize callback functions

@@ -16,40 +16,6 @@ class ArgParser;
 class Mesh;
 class Camera;
 
-// ====================================================================
-// NOTE:  All the methods and variables of this class are static
-// ====================================================================
-
-// ======================================================================
-// helper structures for VBOs, for rendering (note, the data stored in
-// each of these is application specific, adjust as needed!)
-struct VBOPosNormalColor {
-  VBOPosNormalColor(const glm::vec3 &p, const glm::vec3 &n, const glm::vec4 &c) {
-    x = p.x; y = p.y; z = p.z;
-    nx = n.x; ny = n.y; nz = n.z;
-    r  =  c.x;  g =  c.y;  b =  c.z; a = c.z;
-//    wr = 1; wg = 1; wb = 1; wa = 1;
-//    s = 0;
-//    t = 0;
-  }
-
-  VBOPosNormalColor(const glm::vec3 &p, const glm::vec3 &n,
-    const glm::vec4 &c, const glm::vec4 &wc, float s_, float t_) {
-    x = p.x; y = p.y; z = p.z;
-    nx = n.x; ny = n.y; nz = n.z;
-    r  =  c.x;  g =  c.y;  b =  c.z;  a = c.a;
-//    wr = wc.x; wg = wc.y; wb = wc.z; wa = wc.a;
-//    s = s_;
-//    t = t_;
-  }
-
-  float x, y, z;         // position
-  float nx, ny, nz;      // normal
-  float r, g, b, a;      // color
-//  float wr, wg, wb, wa;  // wireframe color
-//  float s, t;            // texture coordinates
-};
-
 class GLCanvas {
  public:
   // various static variables
