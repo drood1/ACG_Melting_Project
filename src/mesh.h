@@ -1,50 +1,46 @@
-#ifndef MESH_H
-#define MESH_H
+#ifndef SRC_MESH_H_
+#define SRC_MESH_H_
 
 #include <cstdlib>
 #include <vector>
 #include <string>
 #include <set>
 #include <iostream>
-#include "hash.h"
-#include "boundingbox.h"
-#include "argparser.h"
-#include "mtrand.h"
+#include "./glCanvas.h"
+#include "./hash.h"
+#include "./boundingbox.h"
+#include "./argparser.h"
+#include "./mtrand.h"
+
 
 class Vertex;
 class Edge;
 class Triangle;
 
-// ======================================================================
-// ======================================================================
 // Stores and renders all the vertices, triangles, and edges for a 3D model
-
 class Mesh {
-
-public:
-
+ public:
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
-  Mesh(ArgParser *a) { args = a; }
+  explicit Mesh(ArgParser *a) { args = a; }
   ~Mesh();
   void Load(const std::string &input_file);
-  
+
   // ========
   // VERTICES
   int numVertices() const { return vertices.size(); }
   Vertex* addVertex(const glm::vec3 &pos);
   // look up vertex by index from original .obj file
   Vertex* getVertex(int i) const {
-    assert (i >= 0 && i < numVertices());
+    assert(i >= 0 && i < numVertices());
     Vertex *v = vertices[i];
-    assert (v != NULL);
+    assert(v != NULL);
     return v; }
+
   void setHeat(Vertex* vertex) {
     float distance = glm::distance(vertex->getPos(), heat_position);
-    // std::cout << args->mtrand() << std::endl;
-    float heat = distance * distance * 0.005;
+    float heat = (1.0f / (distance)) * 0.00005;
     vertex->setHeat(heat);
-    // std::cout << heat << std::endl;
   }
 
   // ==================================================
@@ -72,35 +68,33 @@ public:
   // ===============
   // OTHER ACCESSORS
   const BoundingBox& getBoundingBox() const { return bbox; }
-  
+
   // ===+=====
   // RENDERING
   void initializeVBOs();
   void setupVBOs();
-  void drawVBOs(const glm::mat4 &ProjectionMatrix,const glm::mat4 &ViewMatrix,const glm::mat4 &ModelMatrix);
+  void drawVBOs(const glm::mat4 &ProjectionMatrix,
+    const glm::mat4 &ViewMatrix, const glm::mat4 &ModelMatrix);
   void cleanupVBOs();
-
   void animate();
 
-  void TriVBOHelper( std::vector<glm::vec3> &indexed_verts,
-                     std::vector<unsigned int> &mesh_tri_indices,
-                     const glm::vec3 &pos_a,
-                     const glm::vec3 &pos_b,
-                     const glm::vec3 &pos_c,
-                     const glm::vec3 &normal_a,
-                     const glm::vec3 &normal_b,
-                     const glm::vec3 &normal_c,
-                     const glm::vec3 &color_ab,
-                     const glm::vec3 &color_bc,
-                     const glm::vec3 &color_ca);
+  void TriVBOHelper(std::vector<glm::vec3> &indexed_verts,
+                    std::vector<unsigned int> &mesh_tri_indices,
+                    const glm::vec3 &pos_a,
+                    const glm::vec3 &pos_b,
+                    const glm::vec3 &pos_c,
+                    const glm::vec3 &normal_a,
+                    const glm::vec3 &normal_b,
+                    const glm::vec3 &normal_c,
+                    const glm::vec3 &color_ab,
+                    const glm::vec3 &color_bc,
+                    const glm::vec3 &color_ca);
 
-private:
-
+ private:
   // don't use these constructors
   Mesh(const Mesh &/*m*/) { assert(0); exit(0); }
   const Mesh& operator=(const Mesh &/*m*/) { assert(0); exit(0); }
 
-   
   // ==============
   // REPRESENTATION
   ArgParser *args;
@@ -118,14 +112,9 @@ private:
   GLuint mesh_VAO;
   GLuint mesh_tri_verts_VBO;
   GLuint mesh_tri_indices_VBO;
+  GLuint heat_vert_VBO;
+
+  std::vector<VBOPosNormalColor> heat_vert;
 };
 
-// ======================================================================
-// ======================================================================
-
-
-#endif
-
-
-
-
+#endif  // SRC_MESH_H_

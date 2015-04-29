@@ -1,5 +1,5 @@
-#ifndef EDGE_H
-#define EDGE_H
+#ifndef SRC_EDGE_H_
+#define SRC_EDGE_H_
 
 #include <cassert>
 #include <cstdlib>
@@ -7,13 +7,8 @@
 class Vertex;
 class Triangle;
 
-// ===================================================================
-// half-edge data structure used by the Mesh class
-
-class Edge { 
-
-public:
-
+class Edge {
+ public:
   // ========================
   // CONSTRUCTORS & DESTRUCTOR
   Edge(Vertex *vs, Vertex *ve, Triangle *t);
@@ -23,39 +18,38 @@ public:
   // ACCESSORS
   Vertex* getStartVertex() const { return start_vertex; }
   Vertex* getEndVertex() const { return end_vertex; }
-  Edge* getNext() const { assert (next != NULL); return next; }
-  Triangle* getTriangle() const { assert (triangle != NULL); return triangle; }
+  Edge* getNext() const { assert(next != NULL); return next; }
+  Triangle* getTriangle() const { assert(triangle != NULL); return triangle; }
   Edge* getOpposite() const {
     // warning!  the opposite edge might be NULL!
     return opposite; }
   float getCrease() const { return crease; }
   float Length() const;
-  
+
   // =========
   // MODIFIERS
   void setOpposite(Edge *e) {
-    // assert (opposite == NULL); 
-    assert (e != NULL);
-    assert (e->opposite == NULL);
-    opposite = e; 
-    e->opposite = this; 
+    // assert(opposite == NULL);
+    assert(e != NULL);
+    assert(e->opposite == NULL);
+    opposite = e;
+    e->opposite = this;
   }
-  void clearOpposite() { 
-    if (opposite == NULL) return; 
-    assert (opposite->opposite == this); 
+  void clearOpposite() {
+    if (opposite == NULL) return;
+    assert(opposite->opposite == this);
     opposite->opposite = NULL;
-    opposite = NULL; 
+    opposite = NULL;
   }
   void setNext(Edge *e) {
-    assert (next == NULL);
-    assert (e != NULL);
-    assert (triangle == e->triangle);
+    assert(next == NULL);
+    assert(e != NULL);
+    assert(triangle == e->triangle);
     next = e;
   }
   void setCrease(float c) { crease = c; }
 
-private:
-
+ private:
   Edge(const Edge&) { assert(0); }
   Edge& operator=(const Edge&) { assert(0); exit(0); }
 
@@ -73,6 +67,4 @@ private:
   float crease;
 };
 
-// ===================================================================
-
-#endif
+#endif  // SRC_EDGE_H_

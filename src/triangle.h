@@ -1,40 +1,37 @@
-#ifndef _TRIANGLE_H
-#define _TRIANGLE_H
+#ifndef SRC_TRIANGLE_H_
+#define SRC_TRIANGLE_H_
 
 #include <cstdlib>
-#include "edge.h"
+#include "./edge.h"
 
 // ===========================================================
-// Stores the indices to the 3 vertices of the triangles, 
+// Stores the indices to the 3 vertices of the triangles,
 // used by the mesh class
-
 class Triangle {
-
-public:
-
+ public:
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
   Triangle() {
-    edge = NULL; 
+    edge = NULL;
     id = next_triangle_id;
     next_triangle_id++;
   }
 
   // =========
   // ACCESSORS
-  Vertex* operator[](int i) const { 
-    assert (edge != NULL);
-    if (i==0) return edge->getStartVertex();
-    if (i==1) return edge->getNext()->getStartVertex();
-    if (i==2) return edge->getNext()->getNext()->getStartVertex();
+  Vertex* operator[](int i) const {
+    assert(edge != NULL);
+    if (i == 0) return edge->getStartVertex();
+    if (i == 1) return edge->getNext()->getStartVertex();
+    if (i == 2) return edge->getNext()->getNext()->getStartVertex();
     assert(0); exit(0);
   }
-  Edge* getEdge() { 
-    assert (edge != NULL);
-    return edge; 
+  Edge* getEdge() {
+    assert(edge != NULL);
+    return edge;
   }
   void setEdge(Edge *e) {
-    assert (edge == NULL);
+    assert(edge == NULL);
     edge = e;
   }
   int getID() { return id; }
@@ -44,12 +41,11 @@ public:
   // with the changes, and re-add it.  This will ensure the edges get
   // updated appropriately.
 
-protected:
-
+ protected:
   // don't use these constructors
   Triangle(const Triangle &/*t*/) { assert(0); exit(0); }
   Triangle& operator= (const Triangle &/*t*/) { assert(0); exit(0); }
-  
+
   // ==============
   // REPRESENTATION
   Edge *edge;
@@ -59,6 +55,4 @@ protected:
   static int next_triangle_id;
 };
 
-// ===========================================================
-
-#endif
+#endif  // SRC_TRIANGLE_H_

@@ -1,5 +1,5 @@
-#ifndef _VERTEX_H
-#define _VERTEX_H
+#ifndef SRC_VERTEX_H_
+#define SRC_VERTEX_H_
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -7,15 +7,12 @@
 
 // ==========================================================
 // Stores the vertex position, used by the Mesh class
-
 class Vertex {
-
-public:
-
+ public:
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
   Vertex(int i, const glm::vec3 &pos) : position(pos) { index = i; }
-  
+
   // =========
   // ACCESSORS
   int getIndex() const { return index; }
@@ -30,19 +27,17 @@ public:
     return heat * gravity;
   }
 
-
   // =========
   // MODIFIERS
   void setPos(glm::vec3 v) { position = v; }
   void setHeat(float h) { heat = h; }
 
-private:
-
+ private:
   // don't use these constructors
   Vertex() { assert(0); exit(0); }
   Vertex(const Vertex&) { assert(0); exit(0); }
   Vertex& operator=(const Vertex&) { assert(0); exit(0); }
-  
+
   // ==============
   // REPRESENTATION
   glm::vec3 position;
@@ -53,18 +48,14 @@ private:
   float heat;
 
   // this is the index from the original .obj file.
-  // technically not part of the half-edge data structure, 
+  // technically not part of the half-edge data structure,
   // but we use it for hashing
-  int index;  
+  int index;
 
   // NOTE: the vertices don't know anything about adjacency.  In some
   // versions of this data structure they have a pointer to one of
   // their incoming edges.  However, this data is very complicated to
   // maintain during mesh manipulation, so it has been omitted.
-
 };
 
-// ==========================================================
-
-#endif
-
+#endif  // SRC_VERTEX_H_

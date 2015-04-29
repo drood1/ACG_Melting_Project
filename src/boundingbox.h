@@ -1,5 +1,5 @@
-#ifndef _BOUNDING_BOX_H_
-#define _BOUNDING_BOX_H_
+#ifndef SRC_BOUNDINGBOX_H_
+#define SRC_BOUNDINGBOX_H_
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -11,19 +11,14 @@
 // allows us to use std::min & std::max
 #define NOMINMAX
 
-// ====================================================================
-// ====================================================================
-
 class BoundingBox {
-
-public:
-
+ public:
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
-  BoundingBox() { 
-    Set(glm::vec3(0,0,0),glm::vec3(0,0,0)); }
-  BoundingBox(const glm::vec3 &_minimum, const glm::vec3 &_maximum) { 
-    Set(_minimum,_maximum); }
+  BoundingBox() {
+    Set(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0)); }
+  BoundingBox(const glm::vec3 &_minimum, const glm::vec3 &_maximum) {
+    Set(_minimum, _maximum); }
 
   // =========
   // ACCESSORS
@@ -33,7 +28,7 @@ public:
   glm::vec3 getMin() const { return minimum; }
   glm::vec3 getMax() const { return maximum; }
   void getCenter(glm::vec3 &c) const {
-    c = maximum; 
+    c = maximum;
     c -= minimum;
     c *= 0.5f;
     c += minimum;
@@ -42,7 +37,7 @@ public:
     double x = maximum.x - minimum.x;
     double y = maximum.y - minimum.y;
     double z = maximum.z - minimum.z;
-    return std::max(x,std::max(y,z));
+    return std::max(x, std::max(y, z));
   }
 
   // =========
@@ -51,33 +46,29 @@ public:
     minimum = bb.minimum;
     maximum = bb.maximum; }
   void Set(const glm::vec3 &_minimum, const glm::vec3 &_maximum) {
-    assert (minimum.x <= maximum.x &&
-	    minimum.y <= maximum.y &&
-	    minimum.z <= maximum.z);
+    assert(minimum.x <= maximum.x &&
+      minimum.y <= maximum.y &&
+      minimum.z <= maximum.z);
     minimum = _minimum;
     maximum = _maximum; }
   void Extend(const glm::vec3 v) {
-    minimum = glm::vec3(std::min(minimum.x,v.x),
-                        std::min(minimum.y,v.y),
-                        std::min(minimum.z,v.z));
-    maximum = glm::vec3(std::max(maximum.x,v.x),
-                        std::max(maximum.y,v.y),
-                        std::max(maximum.z,v.z)); 
+    minimum = glm::vec3(std::min(minimum.x, v.x),
+                        std::min(minimum.y, v.y),
+                        std::min(minimum.z, v.z));
+    maximum = glm::vec3(std::max(maximum.x, v.x),
+                        std::max(maximum.y, v.y),
+                        std::max(maximum.z, v.z));
   }
   void Extend(const BoundingBox &bb) {
     Extend(bb.minimum);
-    Extend(bb.maximum); 
+    Extend(bb.maximum);
   }
 
-private:
-
+ private:
   // ==============
   // REPRESENTATION
   glm::vec3 minimum;
   glm::vec3 maximum;
 };
 
-// ====================================================================
-// ====================================================================
-
-#endif
+#endif  // SRC_BOUNDINGBOX_H_

@@ -1,8 +1,8 @@
 #ifndef _EDGE_H_
 #define _EDGE_H_
 
-#include "vertex.h"
-#include "edge.h"
+#include "./vertex.h"
+#include "./edge.h"
 
 
 // ===========
@@ -19,7 +19,7 @@ Edge::Edge(Vertex *vs, Vertex *ve, Triangle *t) {
 
 // ==========
 // DESTRUCTOR
-Edge::~Edge() { 
+Edge::~Edge() {
   // disconnect from the opposite edge
   if (opposite != NULL)
     opposite->opposite = NULL;

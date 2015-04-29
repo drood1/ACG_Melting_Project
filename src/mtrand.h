@@ -46,7 +46,7 @@
 #define MTRAND_H
 
 class MTRand_int32 { // Mersenne Twister random number generator
-public:
+ public:
 // default constructor: uses default seed only if this is the first instance
   MTRand_int32() { if (!init) seed(5489UL); init = true; }
 // constructor with 32 bit int as seed
@@ -62,7 +62,7 @@ public:
   virtual ~MTRand_int32() {} // destructor
 protected: // used by derived classes, otherwise not accessible; use the ()-operator
   unsigned long rand_int32(); // generate 32 bit random integer
-private:
+ private:
   static const int n = 624, m = 397; // compile time constants
 // the variables below are static (no duplicates can exist)
   static unsigned long state[n]; // state vector array
@@ -97,57 +97,57 @@ inline unsigned long MTRand_int32::rand_int32() { // generate 32 bit random int
 
 // generates double floating point numbers in the half-open interval [0, 1)
 class MTRand : public MTRand_int32 {
-public:
+ public:
   MTRand() : MTRand_int32() {}
   MTRand(unsigned long seed) : MTRand_int32(seed) {}
   MTRand(const unsigned long* seed, int size) : MTRand_int32(seed, size) {}
   ~MTRand() {}
   double operator()() {
     return static_cast<double>(rand_int32()) * (1. / 4294967296.); } // divided by 2^32
-private:
+ private:
   MTRand(const MTRand&); // copy constructor not defined
   void operator=(const MTRand&); // assignment operator not defined
 };
 
 // generates double floating point numbers in the closed interval [0, 1]
 class MTRand_closed : public MTRand_int32 {
-public:
+ public:
   MTRand_closed() : MTRand_int32() {}
   MTRand_closed(unsigned long seed) : MTRand_int32(seed) {}
   MTRand_closed(const unsigned long* seed, int size) : MTRand_int32(seed, size) {}
   ~MTRand_closed() {}
   double operator()() {
     return static_cast<double>(rand_int32()) * (1. / 4294967295.); } // divided by 2^32 - 1
-private:
+ private:
   MTRand_closed(const MTRand_closed&); // copy constructor not defined
   void operator=(const MTRand_closed&); // assignment operator not defined
 };
 
 // generates double floating point numbers in the open interval (0, 1)
 class MTRand_open : public MTRand_int32 {
-public:
+ public:
   MTRand_open() : MTRand_int32() {}
   MTRand_open(unsigned long seed) : MTRand_int32(seed) {}
   MTRand_open(const unsigned long* seed, int size) : MTRand_int32(seed, size) {}
   ~MTRand_open() {}
   double operator()() {
     return (static_cast<double>(rand_int32()) + .5) * (1. / 4294967296.); } // divided by 2^32
-private:
+ private:
   MTRand_open(const MTRand_open&); // copy constructor not defined
   void operator=(const MTRand_open&); // assignment operator not defined
 };
 
 // generates 53 bit resolution doubles in the half-open interval [0, 1)
 class MTRand53 : public MTRand_int32 {
-public:
+ public:
   MTRand53() : MTRand_int32() {}
   MTRand53(unsigned long seed) : MTRand_int32(seed) {}
   MTRand53(const unsigned long* seed, int size) : MTRand_int32(seed, size) {}
   ~MTRand53() {}
   double operator()() {
-    return (static_cast<double>(rand_int32() >> 5) * 67108864. + 
+    return (static_cast<double>(rand_int32() >> 5) * 67108864. +
       static_cast<double>(rand_int32() >> 6)) * (1. / 9007199254740992.); }
-private:
+ private:
   MTRand53(const MTRand53&); // copy constructor not defined
   void operator=(const MTRand53&); // assignment operator not defined
 };

@@ -1,19 +1,14 @@
-#ifndef _CAMERA_H_
-#define _CAMERA_H_
+#ifndef SRC_CAMERA_H_
+#define SRC_CAMERA_H_
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <cassert>
 #include <iostream>
 #include <fstream>
 
-// Include GLM
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-// ====================================================================
-// ====================================================================
-
 class Camera {
-public:
+ public:
   // CONSTRUCTOR & DESTRUCTOR
   Camera(const glm::vec3 &c, const glm::vec3 &poi, const glm::vec3 &u);
   virtual ~Camera() {}
@@ -31,16 +26,15 @@ public:
   friend std::ostream& operator<< (std::ostream& ostr, const Camera &c);
   friend std::istream& operator>> (std::istream& istr, Camera &c);
 
-public:
-  //protected:
-  Camera() { assert(0); } // don't use
+ public:
+  Camera() { assert(0); }  // don't use
 
   // HELPER FUNCTIONS
   glm::vec3 getHorizontal() const {
-    return glm::normalize(glm::cross(getDirection(),up));
+    return glm::normalize(glm::cross(getDirection(), up));
   }
   glm::vec3 getScreenUp() const {
-    return glm::normalize(glm::cross(getHorizontal(),getDirection()));
+    return glm::normalize(glm::cross(getHorizontal(), getDirection()));
   }
   glm::vec3 getDirection() const {
     return glm::normalize(point_of_interest - camera_position);
@@ -56,15 +50,13 @@ public:
   glm::mat4 ProjectionMatrix;
 };
 
-// ====================================================================
-
 class OrthographicCamera : public Camera {
-public:
+ public:
   // CONSTRUCTOR & DESTRUCTOR
-  OrthographicCamera(const glm::vec3 &c = glm::vec3(0,0,1), 
-		     const glm::vec3 &poi = glm::vec3(0,0,0), 
-		     const glm::vec3 &u = glm::vec3(0,1,0),
-		     float s=100);  
+  OrthographicCamera(const glm::vec3 &c = glm::vec3(0, 0, 1),
+         const glm::vec3 &poi = glm::vec3(0, 0, 0),
+         const glm::vec3 &u = glm::vec3(0, 1, 0),
+         float s = 100);
 
   // GL NAVIGATION
   void glPlaceCamera();
@@ -73,20 +65,18 @@ public:
   friend std::ostream& operator<< (std::ostream& ostr, const OrthographicCamera &c);
   friend std::istream& operator>> (std::istream& istr, OrthographicCamera &c);
 
-private:
+ private:
   // REPRESENTATION
   float size;
 };
 
-// ====================================================================
-
 class PerspectiveCamera : public Camera {
-public:
+ public:
   // CONSTRUCTOR & DESTRUCTOR
-  PerspectiveCamera(const glm::vec3 &c = glm::vec3(0,0,1), 
-		    const glm::vec3 &poi = glm::vec3(0,0,0), 
-		    const glm::vec3 &u = glm::vec3(0,1,0),
-		    float a = 45);
+  PerspectiveCamera(const glm::vec3 &c = glm::vec3(0, 0, 1),
+        const glm::vec3 &poi = glm::vec3(0, 0, 0),
+        const glm::vec3 &u = glm::vec3(0, 1, 0),
+        float a = 45);
 
   // GL NAVIGATION
   void glPlaceCamera();
@@ -95,12 +85,9 @@ public:
   friend std::ostream& operator<< (std::ostream& ostr, const PerspectiveCamera &c);
   friend std::istream& operator>> (std::istream& istr, PerspectiveCamera &c);
 
-private:
+ private:
   // REPRESENTATION
   float angle;
 };
 
-// ====================================================================
-
-#endif
-
+#endif  // SRC_CAMERA_H_
