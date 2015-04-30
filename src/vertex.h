@@ -27,6 +27,24 @@ class Vertex {
     return heat * gravity;
   }
 
+  glm::vec4 getBaseColor() {
+    // Brown(ish)
+    return  glm::vec4(0.12, 0.031, 0.031, 1.0);
+  }
+
+  glm::vec4 getHeatColor() {
+    // Red(ish)
+    return heat * 2000.0f * glm::vec4(1.0, 0.0, 0.0, 1.0);
+  }
+
+  glm::vec4 getColor(int mode) {
+    if (mode == 0) {
+      return getBaseColor();
+    } else {
+      return getHeatColor();
+    }
+  }
+
   // =========
   // MODIFIERS
   void setPos(glm::vec3 v) { position = v; }

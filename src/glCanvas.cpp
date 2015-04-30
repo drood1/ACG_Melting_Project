@@ -221,6 +221,28 @@ void GLCanvas::keyboardCB(GLFWwindow* window, int key, int scancode, int action,
       args->gouraud = !args->gouraud;
       mesh->setupVBOs();
       break;
+    case 'c': case 'C':
+      args->color_mode = (args->color_mode + 1) % 2;
+      if (args->color_mode == 0) {
+        std::cout << "Changed to base color" << std::endl;
+      } else {
+        std::cout << "Changed to heat color" << std::endl;
+      }
+      break;
+    case 'h': case 'H':
+      args->animate_heat = !args->animate_heat;
+      std::cout << "Toggled moving heat source" << std::endl;
+      break;
+    case 'r': case 'R':
+      if (args->heat_removed) {
+        mesh->replaceHeat();
+        std::cout << "Replaced heat source" << std::endl;
+      } else {
+        mesh->removeHeat();
+        std::cout << "Removed heat source" << std::endl;
+      }
+      args->heat_removed = !args->heat_removed;
+      break;
     case 'q':  case 'Q':
       exit(0);
       break;

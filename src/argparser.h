@@ -67,7 +67,10 @@ class ArgParser {
     wireframe = 0;
     gouraud = false;
     animate = false;
+    animate_heat = false;
+    heat_removed = false;
     timestep = 0.001;
+    color_mode = 0;
   }
 
   // ==============
@@ -81,7 +84,10 @@ class ArgParser {
   bool gouraud;
   MTRand mtrand;
   bool animate;
+  bool animate_heat;
+  bool heat_removed;
   float timestep;
+  int color_mode;
 };
 
 #endif  // SRC_ARGPARSER_H_

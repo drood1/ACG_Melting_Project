@@ -38,10 +38,12 @@ class Mesh {
     assert(v != NULL);
     return v; }
 
-  void setHeat(Vertex* vertex) {
-    float distance = glm::distance(vertex->getPos(), heat_position);
-    float heat = (1.0f / (distance)) * 0.00005;
-    vertex->setHeat(heat);
+  void removeHeat() {
+    heat_position += glm::vec3(1000.0, 1000.0, 1000.0);
+  }
+
+  void replaceHeat() {
+    heat_position -= glm::vec3(1000.0, 1000.0, 1000.0);
   }
 
   // ==================================================
@@ -81,6 +83,7 @@ class Mesh {
     const glm::mat4 &ViewMatrix, const glm::mat4 &ModelMatrix);
   void cleanupVBOs();
   void animate();
+  void animateHeat();
 
  private:
   // don't use these constructors

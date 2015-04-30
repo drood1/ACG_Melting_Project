@@ -9,6 +9,7 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include "./glCanvas.h"
 #include "./edge.h"
@@ -165,8 +166,7 @@ void Mesh::Load(const std::string &input_file) {
     } else if (token == std::string("v")) {
       vert_count++;
       ss >> x >> y >> z;
-      Vertex* newVertex = addVertex(glm::vec3(x, y, z));
-      setHeat(newVertex);
+      addVertex(glm::vec3(x, y, z));
     } else if (token == std::string("f")) {
       a = b = c = -1;
       ss >> a >> b;
@@ -221,11 +221,6 @@ void Mesh::Load(const std::string &input_file) {
   num_mini_triangles = 0;
 }
 
-
-// =======================================================================
-// DRAWING
-// =======================================================================
-
 glm::vec3 ComputeNormal(const glm::vec3 &p1, const glm::vec3 &p2, const glm::vec3 &p3) {
   glm::vec3 v12 = p2;
   v12 -= p1;
@@ -239,28 +234,27 @@ glm::vec3 ComputeNormal(const glm::vec3 &p1, const glm::vec3 &p2, const glm::vec
 void Mesh::SetupMesh() {
   mesh_tri_verts.clear();
   mesh_tri_indices.clear();
-  glm::vec4 mesh_color(0.645, 0.164, 0.164, 1.0);
   for (triangleshashtype::iterator iter = triangles.begin();
        iter != triangles.end(); iter++) {
     Triangle *t = iter->second;
     glm::vec3 a = (*t)[0]->getPos();
     glm::vec3 b = (*t)[1]->getPos();
     glm::vec3 c = (*t)[2]->getPos();
-    glm::vec3 na = ComputeNormal(a,b,c);
+    glm::vec3 na = ComputeNormal(a, b, c);
     glm::vec3 nb = na;
     glm::vec3 nc = na;
     int start = mesh_tri_verts.size();
-    mesh_tri_verts.push_back(VBOPosNormalColor(a,na,mesh_color));
-    mesh_tri_verts.push_back(VBOPosNormalColor(b,nb,mesh_color));
-    mesh_tri_verts.push_back(VBOPosNormalColor(c,nc,mesh_color));
-    mesh_tri_indices.push_back(VBOIndexedTri(start,start+1,start+2));
+    mesh_tri_verts.push_back(VBOPosNormalColor(a, na, (*t)[0]->getColor(args->color_mode)));
+    mesh_tri_verts.push_back(VBOPosNormalColor(b, nb, (*t)[1]->getColor(args->color_mode)));
+    mesh_tri_verts.push_back(VBOPosNormalColor(c, nc, (*t)[2]->getColor(args->color_mode)));
+    mesh_tri_indices.push_back(VBOIndexedTri(start, start+1, start+2));
   }
-  glBindBuffer(GL_ARRAY_BUFFER,mesh_tri_verts_VBO); 
+  glBindBuffer(GL_ARRAY_BUFFER, mesh_tri_verts_VBO);
   glBufferData(GL_ARRAY_BUFFER,
-         sizeof(VBOPosNormalColor) * mesh_tri_verts.size(), 
+         sizeof(VBOPosNormalColor) * mesh_tri_verts.size(),
          &mesh_tri_verts[0],
-         GL_STATIC_DRAW); 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,mesh_tri_indices_VBO); 
+         GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_tri_indices_VBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
          sizeof(VBOIndexedTri) * mesh_tri_indices.size(),
          &mesh_tri_indices[0], GL_STATIC_DRAW);
@@ -320,15 +314,18 @@ void Mesh::drawVBOs(const glm::mat4 &ProjectionMatrix,
   glUniform1i(GLCanvas::wireframeID, args->wireframe);
 
   HandleGLError("enter draw mesh");
-  glBindBuffer(GL_ARRAY_BUFFER,mesh_tri_verts_VBO); 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,mesh_tri_indices_VBO); 
+  glBindBuffer(GL_ARRAY_BUFFER, mesh_tri_verts_VBO);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_tri_indices_VBO);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(VBOPosNormalColor),(void*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+    sizeof(VBOPosNormalColor), reinterpret_cast<void*>(0));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(VBOPosNormalColor),(void*)sizeof(glm::vec3) );
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+    sizeof(VBOPosNormalColor), reinterpret_cast<void*>(sizeof(glm::vec3)));
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 3, GL_FLOAT,GL_FALSE,sizeof(VBOPosNormalColor), (void*)(sizeof(glm::vec3)*2));
-  glDrawElements(GL_TRIANGLES, mesh_tri_indices.size()*3,GL_UNSIGNED_INT, 0);
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE,
+    sizeof(VBOPosNormalColor), reinterpret_cast<void*>(sizeof(glm::vec3)*2));
+  glDrawElements(GL_TRIANGLES, mesh_tri_indices.size()*3, GL_UNSIGNED_INT, 0);
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
   glDisableVertexAttribArray(2);
@@ -368,6 +365,23 @@ void Mesh::animate() {
   if (args->animate) {
     // do 10 steps of animation before rendering
     for (unsigned int i = 0; i < 10; i++) {
+      // Calculate heat from main heat source
+      for (unsigned int j = 0; j < vertices.size(); ++j) {
+        Vertex* v = vertices[j];
+        float heat = v->getHeat();
+        float distance = glm::distance(v->getPos(), heat_position);
+        float newHeat = (1.0f / (distance)) / 500000.0f * args->timestep;
+        float lostHeat = 1.0 / 100000.0f * args->timestep;
+        heat += newHeat;
+        if (args->heat_removed)
+          heat -= lostHeat;
+        if (heat > 0.5) heat = 0.5;
+        if (heat < 0.0) heat = 0.0;
+        v->setHeat(heat);
+      }
+
+      // Do we need to calculate heat from vertex to vertex?
+      // Calculate new positions
       for (unsigned int j = 0; j < vertices.size(); ++j) {
         Vertex* v = vertices[j];
         glm::vec3 position = v->getPos();
@@ -379,5 +393,16 @@ void Mesh::animate() {
       }
     }
   }
+  if (args->animate_heat && !args->heat_removed) {
+    animateHeat();
+  }
   setupVBOs();
+}
+
+void Mesh::animateHeat() {
+  float x = heat_position[0];
+  float y = heat_position[1];
+  float z = heat_position[2];
+  float angle = 0.005;
+  heat_position = glm::vec3(x * cos(angle) - z * sin(angle), y, x * sin(angle) + z * cos(angle));
 }
