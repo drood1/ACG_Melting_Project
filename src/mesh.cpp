@@ -65,6 +65,9 @@ void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
   ea->setNext(eb);
   eb->setNext(ec);
   ec->setNext(ea);
+  ea->setOriginalDistance();
+  eb->setOriginalDistance();
+  ec->setOriginalDistance();
   // verify these edges aren't already in the mesh
   // (which would be a bug, or a non-manifold mesh)
   assert(edges.find(std::make_pair(a, b)) == edges.end());
@@ -384,12 +387,43 @@ void Mesh::animate() {
       // Calculate new positions
       for (unsigned int j = 0; j < vertices.size(); ++j) {
         Vertex* v = vertices[j];
-        glm::vec3 position = v->getPos();
-        position += args->timestep * v->getVelocity();
-        if (position[1] < floorY) {
-          position[1] = floorY;
+        if (!v->isOnFloor()) {
+          glm::vec3 position = v->getPos();
+          position += args->timestep * v->getVelocity();
+          if (position[1] < floorY) {
+            position[1] = floorY;
+            v->setOnFloor();
+          }
+          v->setPos(position);
         }
-        v->setPos(position);
+      }
+
+      for (edgeshashtype::iterator itr = edges.begin(); itr != edges.end(); ++itr) {
+        Edge* edge = itr->second;
+        if (edge->getTopVertex() == edge->getStartVertex()) {
+          Vertex* topVertex = edge->getTopVertex();
+          Vertex* bottomVertex = edge->getBottomVertex();
+          glm::vec3 bottomPosition = bottomVertex->getPos();
+          glm::vec3 topPosition = topVertex->getPos();
+          float newDistance = glm::distance(topPosition, bottomPosition);
+          float originalDistance = edge->getOriginalDistance();
+          if (newDistance < originalDistance) {
+            float difference = newDistance - originalDistance;
+            float differenceSq = difference * difference;
+            
+            glm::vec3 positionDifference = topPosition - bottomPosition;
+            // std::cout << differenceSq << std::endl;
+            float k = 2000.0;
+            bottomPosition.x -= k * differenceSq * positionDifference.x * args->timestep;
+            bottomPosition.z -= k * differenceSq * positionDifference.z * args->timestep;
+            bottomVertex->setPos(bottomPosition);
+          }
+          if (bottomVertex->isOnFloor() && topPosition.y <= bottomPosition.y) {
+            topVertex->setOnFloor();
+            topPosition.y = bottomPosition.y + 0.0001;
+            topVertex->setPos(topPosition);
+          }
+        }
       }
     }
   }

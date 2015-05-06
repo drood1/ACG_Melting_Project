@@ -26,6 +26,12 @@ class Vertex {
     glm::vec3 gravity(0.0f, -9.8f, 0.0f);
     return heat * gravity;
   }
+  bool isOnFloor() {
+    return is_on_floor;
+  }
+  void setOnFloor() {
+    is_on_floor = true;
+  }
 
   glm::vec4 getBaseColor() {
     // Brown(ish)
@@ -69,6 +75,7 @@ class Vertex {
   // technically not part of the half-edge data structure,
   // but we use it for hashing
   int index;
+  bool is_on_floor = false;
 
   // NOTE: the vertices don't know anything about adjacency.  In some
   // versions of this data structure they have a pointer to one of

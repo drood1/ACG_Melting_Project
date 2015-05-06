@@ -18,12 +18,15 @@ class Edge {
   // ACCESSORS
   Vertex* getStartVertex() const { return start_vertex; }
   Vertex* getEndVertex() const { return end_vertex; }
+  Vertex* getTopVertex() const { return top_vertex; }
+  Vertex* getBottomVertex() const { return bottom_vertex; }
   Edge* getNext() const { assert(next != NULL); return next; }
   Triangle* getTriangle() const { assert(triangle != NULL); return triangle; }
   Edge* getOpposite() const {
     // warning!  the opposite edge might be NULL!
     return opposite; }
   float getCrease() const { return crease; }
+  float getOriginalDistance() const { return original_distance; }
   float Length() const;
 
   // =========
@@ -48,6 +51,19 @@ class Edge {
     next = e;
   }
   void setCrease(float c) { crease = c; }
+  void setOriginalDistance() {
+    original_distance = glm::distance(getStartVertex()->getPos(), getEndVertex()->getPos());
+    setTopVertex();
+  }
+  void setTopVertex() {
+    if (start_vertex->getPos().y > end_vertex->getPos().y) {
+      top_vertex = start_vertex;
+      bottom_vertex = end_vertex;
+    } else {
+      top_vertex = end_vertex;
+      bottom_vertex = start_vertex;
+    }
+  }
 
  private:
   Edge(const Edge&) { assert(0); }
@@ -60,9 +76,12 @@ class Edge {
   //   dealing with non-closed meshes easier
   Vertex *start_vertex;
   Vertex *end_vertex;
+  Vertex *top_vertex;
+  Vertex *bottom_vertex;
   Triangle *triangle;
   Edge *opposite;
   Edge *next;
+  float original_distance;
   // the crease value is an extra field used during subdivision
   float crease;
 };

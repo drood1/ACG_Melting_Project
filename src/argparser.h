@@ -54,6 +54,10 @@ class ArgParser {
         wireframe = 1;
       } else if (argv[i] == std::string("-gouraud")) {
         gouraud = true;
+      } else if (argv[i] == std::string("-timestep")) {
+        i++; assert (i < argc); 
+        timestep = atof(argv[i]);
+        assert (timestep > 0);
       } else {
         printf("whoops error with command line argument %d: '%s'\n", i, argv[i]);
         assert(0);
