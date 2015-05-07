@@ -5,12 +5,14 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <map>
 #include <iostream>
 #include "./glCanvas.h"
 #include "./hash.h"
 #include "./boundingbox.h"
 #include "./argparser.h"
 #include "./mtrand.h"
+#include "./material.h"
 #include "./vbo_structs.h"
 
 
@@ -44,6 +46,10 @@ class Mesh {
 
   void replaceHeat() {
     heat_position -= glm::vec3(1000.0, 1000.0, 1000.0);
+  }
+
+  float calculateHeat(float distance, float k) {
+    return 1.0 / (distance * distance) / k;
   }
 
   // ==================================================
@@ -102,14 +108,17 @@ class Mesh {
   MTRand_closed rand;
   std::set<Edge*> special_edges;
   glm::vec3 heat_position;
-  float floorY;
+  float floor_y;
+  float heat_loss;
+  std::map<std::string, Material*> materials;
+  std::string material;
 
   GLuint mesh_VAO;
   GLuint mesh_tri_verts_VBO;
   GLuint mesh_tri_indices_VBO;
   GLuint heat_vert_VBO;
 
-  std::vector<VBOPosNormalColor> mesh_tri_verts; 
+  std::vector<VBOPosNormalColor> mesh_tri_verts;
   std::vector<VBOIndexedTri> mesh_tri_indices;
   std::vector<VBOPosNormalColor> heat_vert;
 };

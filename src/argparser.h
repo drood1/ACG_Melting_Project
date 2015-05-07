@@ -3,6 +3,7 @@
 
 #include <string>
 #include <cassert>
+#include <iostream>
 #include "./mtrand.h"
 
 
@@ -55,9 +56,13 @@ class ArgParser {
       } else if (argv[i] == std::string("-gouraud")) {
         gouraud = true;
       } else if (argv[i] == std::string("-timestep")) {
-        i++; assert (i < argc); 
+        i++; assert(i < argc);
         timestep = atof(argv[i]);
-        assert (timestep > 0);
+        assert(timestep > 0);
+      } else if (argv[i] == std::string("-max_heat")) {
+        i++; assert(i < argc);
+        max_heat = atof(argv[i]);
+        assert(max_heat > 0);
       } else {
         printf("whoops error with command line argument %d: '%s'\n", i, argv[i]);
         assert(0);
@@ -75,6 +80,7 @@ class ArgParser {
     heat_removed = false;
     timestep = 0.001;
     color_mode = 0;
+    max_heat = 0.3;
   }
 
   // ==============
@@ -92,6 +98,7 @@ class ArgParser {
   bool heat_removed;
   float timestep;
   int color_mode;
+  float max_heat;
 };
 
 #endif  // SRC_ARGPARSER_H_

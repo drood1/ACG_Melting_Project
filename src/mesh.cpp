@@ -10,12 +10,18 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <cstdlib>
 
 #include "./glCanvas.h"
 #include "./edge.h"
 #include "./vertex.h"
 #include "./triangle.h"
+#include "./material.h"
 #include "./mtrand.h"
+
+void print_vec(glm::vec3 vec) {
+  std::cout << vec[0] << ", " << vec[1] << ", " << vec[2] << std::endl;
+}
 
 // to give a unique id number to each triangles
 int Triangle::next_triangle_id = 0;
@@ -44,6 +50,7 @@ Mesh::~Mesh() {
 Vertex* Mesh::addVertex(const glm::vec3 &position) {
   int index = numVertices();
   Vertex *v = new Vertex(index, position);
+  v->setMaterial(materials[material]);
   vertices.push_back(v);
   if (numVertices() == 1)
     bbox = BoundingBox(position, position);
@@ -149,8 +156,11 @@ void Mesh::Load(const std::string &input_file) {
   int vert_count = 0;
   int vert_index = 1;
 
-  // TODO(austin): maybe this shouldn't be hardcoded
+  // Default values
+  material = "default";
+  materials[material] = new Material(0.001, glm::vec4(0.5, 0.5, 0.5, 1.0)); 
   heat_position = glm::vec3(-0.2, 0.2, 0.1);
+  heat_loss = 0.1;
 
   // read in each line of the file
   while (istr.getline(line, MAX_CHAR_PER_LINE)) {
@@ -166,6 +176,24 @@ void Mesh::Load(const std::string &input_file) {
     if (token == std::string("usemtl") || token == std::string("g")) {
       vert_index = 1;
       index++;
+    } else if (token == std::string("md")) {
+      // Material definition
+      float mp, r, g, b, a;
+      ss >> token2 >> mp >> r >> g >> b >> a;
+      materials[token2] = new Material(mp, glm::vec4(r, g, b, a));
+      material = token2;
+    } else if (token == std::string("m")) {
+      // Use material
+      ss >> token2;
+      material = token2;
+    } else if (token == std::string("h")) {
+      // Heat source
+      ss >> x >> y >> z;
+      heat_position = glm::vec3(x, y, z);
+    } else if (token == std::string("hl")) {
+      // Heat loss (cold room=more heat loss)
+      ss >> x;
+      heat_loss = x;
     } else if (token == std::string("v")) {
       vert_count++;
       ss >> x >> y >> z;
@@ -211,17 +239,21 @@ void Mesh::Load(const std::string &input_file) {
 
   std::cout << "Loaded " << numTriangles() << " triangles." << std::endl;
 
-  floorY = vertices[0]->getPos()[1];
+  floor_y = vertices[0]->getPos()[1];
   for (unsigned int i = 0; i < vertices.size(); ++i) {
     Vertex* v = vertices[i];
     float y = v->getPos()[1];
-    if (y < floorY) {
-      floorY = y;
+    if (y < floor_y) {
+      floor_y = y;
     }
   }
 
   assert(numTriangles() > 0);
   num_mini_triangles = 0;
+
+  print_vec(bbox.getCenter());
+  print_vec(bbox.getMin());
+  print_vec(bbox.getMax());
 }
 
 glm::vec3 ComputeNormal(const glm::vec3 &p1, const glm::vec3 &p2, const glm::vec3 &p3) {
@@ -373,31 +405,44 @@ void Mesh::animate() {
         Vertex* v = vertices[j];
         float heat = v->getHeat();
         float distance = glm::distance(v->getPos(), heat_position);
-        float newHeat = (1.0f / (distance)) / 500000.0f * args->timestep;
-        float lostHeat = 1.0 / 100000.0f * args->timestep;
-        heat += newHeat;
-        if (args->heat_removed)
-          heat -= lostHeat;
-        if (heat > 0.5) heat = 0.5;
+
+        heat += calculateHeat(distance, 300000.0f) * args->timestep;
+        if (heat > args->max_heat) heat = args->max_heat;
         if (heat < 0.0) heat = 0.0;
         v->setHeat(heat);
+        v->loseHeat(heat_loss, args->timestep);
       }
 
-      // Do we need to calculate heat from vertex to vertex?
+      // Calculate vertex to vertex heat
+      for (unsigned int j = 0; j < vertices.size(); ++j) {
+        for (unsigned int k = j+1; k < vertices.size(); ++k) {
+          Vertex* v = vertices[j];
+          Vertex* u = vertices[k];
+          float distance = glm::distance(v->getPos(), u->getPos());
+          float newHeatFactor = calculateHeat(distance, 1000000.0f) * args->timestep;
+          float vToU = newHeatFactor * v->getHeat();
+          float uToV = newHeatFactor * u->getHeat();
+          v->setHeat(v->getHeat() - 0.5 * vToU + uToV);
+          u->setHeat(u->getHeat() + vToU - 0.5 * uToV);
+        }
+      }
+
       // Calculate new positions
       for (unsigned int j = 0; j < vertices.size(); ++j) {
         Vertex* v = vertices[j];
         if (!v->isOnFloor()) {
           glm::vec3 position = v->getPos();
           position += args->timestep * v->getVelocity();
-          if (position[1] < floorY) {
-            position[1] = floorY;
+          if (position[1] < floor_y) {
+            position[1] = floor_y;
             v->setOnFloor();
           }
           v->setPos(position);
         }
       }
 
+      // Spring forces
+      glm::vec3 center = bbox.getCenter();
       for (edgeshashtype::iterator itr = edges.begin(); itr != edges.end(); ++itr) {
         Edge* edge = itr->second;
         if (edge->getTopVertex() == edge->getStartVertex()) {
@@ -407,16 +452,38 @@ void Mesh::animate() {
           glm::vec3 topPosition = topVertex->getPos();
           float newDistance = glm::distance(topPosition, bottomPosition);
           float originalDistance = edge->getOriginalDistance();
-          if (newDistance < originalDistance) {
-            float difference = newDistance - originalDistance;
-            float differenceSq = difference * difference;
-            
-            glm::vec3 positionDifference = topPosition - bottomPosition;
+          float difference = newDistance - originalDistance;
+          if (difference > 0.0015) {
+            difference = 0.0015;
+          }
+          float k = 10.0;
+          if (difference > 0.0) {
             // std::cout << differenceSq << std::endl;
-            float k = 2000.0;
-            bottomPosition.x -= k * differenceSq * positionDifference.x * args->timestep;
-            bottomPosition.z -= k * differenceSq * positionDifference.z * args->timestep;
-            bottomVertex->setPos(bottomPosition);
+            Triangle* triangle = edge->getTriangle();
+            glm::vec3 normal = ComputeNormal((*triangle)[0]->getOriginalPos(), (*triangle)[1]->getOriginalPos(), (*triangle)[2]->getOriginalPos());
+            float direction_x = normal.x;
+            float direction_z = normal.z;
+            // if (bottomPosition.x < center.x) {
+            //   direction_x = -1;
+            // }
+            // if (bottomPosition.z < center.z) {
+            //   direction_z = -1;
+            // }
+            
+            float factor = difference * args->timestep;
+            bottomPosition.x += direction_x * factor;
+            bottomPosition.z += direction_z * factor;
+            if (bottomVertex->isOnFloor() && bottomVertex->isMelting()) {
+              bottomVertex->setPos(bottomPosition);
+              // std::cout << difference << std::endl;
+              // std::cout <<  << std::endl;
+              // std::cout << "MOVING IT: " << factor << ", " << difference << std::endl;
+            }
+          }
+          if (!topVertex->isOnFloor()) {
+            k = 1.0;
+            topPosition.y -= k * difference * args->timestep;
+            topVertex->setPos(topPosition);
           }
           if (bottomVertex->isOnFloor() && topPosition.y <= bottomPosition.y) {
             topVertex->setOnFloor();
@@ -437,6 +504,6 @@ void Mesh::animateHeat() {
   float x = heat_position[0];
   float y = heat_position[1];
   float z = heat_position[2];
-  float angle = 0.005;
+  float angle = 0.05;
   heat_position = glm::vec3(x * cos(angle) - z * sin(angle), y, x * sin(angle) + z * cos(angle));
 }

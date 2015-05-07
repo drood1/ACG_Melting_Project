@@ -33,6 +33,13 @@ class BoundingBox {
     c *= 0.5f;
     c += minimum;
   }
+  glm::vec3 getCenter() const {
+    glm::vec3 c = maximum;
+    c -= minimum;
+    c *= 0.5f;
+    c += minimum;
+    return c;
+  }
   double maxDim() const {
     double x = maximum.x - minimum.x;
     double y = maximum.y - minimum.y;
