@@ -222,12 +222,14 @@ void GLCanvas::keyboardCB(GLFWwindow* window, int key, int scancode, int action,
       mesh->setupVBOs();
       break;
     case 'c': case 'C':
-      args->color_mode = (args->color_mode + 1) % 2;
+      args->color_mode = (args->color_mode + 1) % 3;
       if (args->color_mode == 0) {
         std::cout << "Changed to base color" << std::endl;
-      } else {
+      } else if (args->color_mode == 1) {
         std::cout << "Changed to heat color" << std::endl;
-      }
+      } else if (args->color_mode == 2) {
+        std::cout << "Changed to force under color" << std::endl;
+      } 
       break;
     case 'h': case 'H':
       args->animate_heat = !args->animate_heat;

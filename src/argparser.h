@@ -78,7 +78,7 @@ class ArgParser {
     animate = false;
     animate_heat = false;
     heat_removed = false;
-    timestep = 0.001;
+    timestep = 0.005;
     color_mode = 0;
     max_heat = 0.3;
   }

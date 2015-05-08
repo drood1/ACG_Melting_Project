@@ -13,6 +13,7 @@
 #include "./argparser.h"
 #include "./mtrand.h"
 #include "./material.h"
+#include "./heat_source.h"
 #include "./vbo_structs.h"
 
 
@@ -41,11 +42,11 @@ class Mesh {
     return v; }
 
   void removeHeat() {
-    heat_position += glm::vec3(1000.0, 1000.0, 1000.0);
+    // heat_position += glm::vec3(1000.0, 1000.0, 1000.0);
   }
 
   void replaceHeat() {
-    heat_position -= glm::vec3(1000.0, 1000.0, 1000.0);
+    // heat_position -= glm::vec3(1000.0, 1000.0, 1000.0);
   }
 
   float calculateHeat(float distance, float k) {
@@ -107,11 +108,13 @@ class Mesh {
   int num_mini_triangles;
   MTRand_closed rand;
   std::set<Edge*> special_edges;
-  glm::vec3 heat_position;
   float floor_y;
   float heat_loss;
+  float room_temperature = 293.0f;
   std::map<std::string, Material*> materials;
   std::string material;
+  std::vector<HeatSource*> heat_sources;
+  std::map<Vertex*, Edge*> edges_by_top;
 
   GLuint mesh_VAO;
   GLuint mesh_tri_verts_VBO;

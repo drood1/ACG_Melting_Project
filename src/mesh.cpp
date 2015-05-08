@@ -49,7 +49,7 @@ Mesh::~Mesh() {
 
 Vertex* Mesh::addVertex(const glm::vec3 &position) {
   int index = numVertices();
-  Vertex *v = new Vertex(index, position);
+  Vertex *v = new Vertex(index, room_temperature, position);
   v->setMaterial(materials[material]);
   vertices.push_back(v);
   if (numVertices() == 1)
@@ -158,9 +158,9 @@ void Mesh::Load(const std::string &input_file) {
 
   // Default values
   material = "default";
-  materials[material] = new Material(0.001, glm::vec4(0.5, 0.5, 0.5, 1.0)); 
-  heat_position = glm::vec3(-0.2, 0.2, 0.1);
-  heat_loss = 0.1;
+  materials[material] = new Material(300, 1, 50, glm::vec4(0.5, 0.5, 0.5, 1.0)); 
+  // heat_position = glm::vec3(-0.2, 0.2, 0.1);
+  // heat_loss = 0.1;
 
   // read in each line of the file
   while (istr.getline(line, MAX_CHAR_PER_LINE)) {
@@ -172,15 +172,17 @@ void Mesh::Load(const std::string &input_file) {
     token = "";
     ss >> token;
     if (token == "") continue;
-
     if (token == std::string("usemtl") || token == std::string("g")) {
       vert_index = 1;
       index++;
+    } else if (token == std::string("rt")) {
+      ss >> x;
+      room_temperature = x;      
     } else if (token == std::string("md")) {
       // Material definition
-      float mp, r, g, b, a;
-      ss >> token2 >> mp >> r >> g >> b >> a;
-      materials[token2] = new Material(mp, glm::vec4(r, g, b, a));
+      float mp, sh, sd, r, g, b, a;
+      ss >> token2 >> mp >> sh >> sd >> r >> g >> b >> a;
+      materials[token2] = new Material(mp, sh, sd, glm::vec4(r, g, b, a));
       material = token2;
     } else if (token == std::string("m")) {
       // Use material
@@ -188,8 +190,10 @@ void Mesh::Load(const std::string &input_file) {
       material = token2;
     } else if (token == std::string("h")) {
       // Heat source
-      ss >> x >> y >> z;
-      heat_position = glm::vec3(x, y, z);
+      float ho;
+      ss >> ho >> x >> y >> z;
+      HeatSource* hs = new HeatSource(ho, glm::vec3(x, y, z));
+      heat_sources.push_back(hs);
     } else if (token == std::string("hl")) {
       // Heat loss (cold room=more heat loss)
       ss >> x;
@@ -251,9 +255,10 @@ void Mesh::Load(const std::string &input_file) {
   assert(numTriangles() > 0);
   num_mini_triangles = 0;
 
-  print_vec(bbox.getCenter());
-  print_vec(bbox.getMin());
-  print_vec(bbox.getMax());
+  for (edgeshashtype::iterator itr = edges.begin(); itr != edges.end(); ++itr) {
+    Edge* edge = itr->second;
+    edges_by_top[edge->getTopVertex()] = edge;
+  }
 }
 
 glm::vec3 ComputeNormal(const glm::vec3 &p1, const glm::vec3 &p2, const glm::vec3 &p3) {
@@ -297,7 +302,10 @@ void Mesh::SetupMesh() {
 
 void Mesh::SetupHeat() {
   heat_vert.clear();
-  heat_vert.push_back(VBOPosNormalColor(heat_position, glm::vec3(1, 1, 1), glm::vec4(1, 0, 0, 1)));
+  for (unsigned int i = 0; i < heat_sources.size(); ++i) {
+    HeatSource* heat_source = heat_sources[i];
+    heat_vert.push_back(VBOPosNormalColor(heat_source->position, glm::vec3(1, 1, 1), heat_source->color));
+  }
   glBindBuffer(GL_ARRAY_BUFFER, heat_vert_VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(VBOPosNormalColor)*1,
     &heat_vert[0], GL_STATIC_DRAW);
@@ -400,110 +408,194 @@ void Mesh::animate() {
   if (args->animate) {
     // do 10 steps of animation before rendering
     for (unsigned int i = 0; i < 10; i++) {
-      // Calculate heat from main heat source
-      for (unsigned int j = 0; j < vertices.size(); ++j) {
-        Vertex* v = vertices[j];
-        float heat = v->getHeat();
-        float distance = glm::distance(v->getPos(), heat_position);
-
-        heat += calculateHeat(distance, 300000.0f) * args->timestep;
-        if (heat > args->max_heat) heat = args->max_heat;
-        if (heat < 0.0) heat = 0.0;
-        v->setHeat(heat);
-        v->loseHeat(heat_loss, args->timestep);
-      }
-
-      // Calculate vertex to vertex heat
-      for (unsigned int j = 0; j < vertices.size(); ++j) {
-        for (unsigned int k = j+1; k < vertices.size(); ++k) {
+      // Calculate heat from main heat source(s)
+      for (unsigned int h = 0; h < heat_sources.size(); ++h) {
+        HeatSource* hs = heat_sources[h];
+        std::vector<float> distances;
+        float distance_sum, distance_max = 0;
+        for (unsigned int j = 0; j < vertices.size(); ++j) {
           Vertex* v = vertices[j];
-          Vertex* u = vertices[k];
-          float distance = glm::distance(v->getPos(), u->getPos());
-          float newHeatFactor = calculateHeat(distance, 1000000.0f) * args->timestep;
-          float vToU = newHeatFactor * v->getHeat();
-          float uToV = newHeatFactor * u->getHeat();
-          v->setHeat(v->getHeat() - 0.5 * vToU + uToV);
-          u->setHeat(u->getHeat() + vToU - 0.5 * uToV);
+          float distance = glm::distance(v->getPos(), hs->position);
+          float distance_squared = distance*distance;
+          distances.push_back(distance_squared);
+          distance_sum += distance;
+          if (distance > distance_max) {
+            distance_max = distance;
+          }
+        }
+        for (unsigned int j = 0; j < vertices.size(); ++j) {
+          distances[j] = distance_max / distances[j] / distance_sum;
+        }
+        for (unsigned int j = 0; j < vertices.size(); ++j) {
+          Vertex* v = vertices[j];
+          float energy = hs->heat_output * distances[j] * args->timestep;
+          v->addEnergy(energy);
         }
       }
 
-      // Calculate new positions
       for (unsigned int j = 0; j < vertices.size(); ++j) {
         Vertex* v = vertices[j];
-        if (!v->isOnFloor()) {
-          glm::vec3 position = v->getPos();
-          position += args->timestep * v->getVelocity();
-          if (position[1] < floor_y) {
-            position[1] = floor_y;
-            v->setOnFloor();
-          }
-          v->setPos(position);
-        }
+        v->receiveEnergy();
+        // std::cout << v->getTemperature() << std::endl;
       }
 
-      // Spring forces
-      glm::vec3 center = bbox.getCenter();
+      for (unsigned int j = 0; j < vertices.size(); ++j) {
+        Vertex* v = vertices[j];
+        glm::vec3 force(0.0, 0.0, 0.0);
+        if (v->isMelting()) {
+          force.y -= (v->getTemperature() - v->getMaterial()->melting_point) * v->getMaterial()->solidity / 100.0;
+        }
+        v->setForce(force);
+      }
+
       for (edgeshashtype::iterator itr = edges.begin(); itr != edges.end(); ++itr) {
         Edge* edge = itr->second;
         if (edge->getTopVertex() == edge->getStartVertex()) {
-          Vertex* topVertex = edge->getTopVertex();
-          Vertex* bottomVertex = edge->getBottomVertex();
-          glm::vec3 bottomPosition = bottomVertex->getPos();
-          glm::vec3 topPosition = topVertex->getPos();
-          float newDistance = glm::distance(topPosition, bottomPosition);
-          float originalDistance = edge->getOriginalDistance();
-          float difference = newDistance - originalDistance;
-          if (difference > 0.0015) {
-            difference = 0.0015;
-          }
-          float k = 10.0;
-          if (difference > 0.0) {
-            // std::cout << differenceSq << std::endl;
-            Triangle* triangle = edge->getTriangle();
-            glm::vec3 normal = ComputeNormal((*triangle)[0]->getOriginalPos(), (*triangle)[1]->getOriginalPos(), (*triangle)[2]->getOriginalPos());
-            float direction_x = normal.x;
-            float direction_z = normal.z;
-            // if (bottomPosition.x < center.x) {
-            //   direction_x = -1;
-            // }
-            // if (bottomPosition.z < center.z) {
-            //   direction_z = -1;
-            // }
-            
-            float factor = difference * args->timestep;
-            bottomPosition.x += direction_x * factor;
-            bottomPosition.z += direction_z * factor;
-            if (bottomVertex->isOnFloor() && bottomVertex->isMelting()) {
-              bottomVertex->setPos(bottomPosition);
-              // std::cout << difference << std::endl;
-              // std::cout <<  << std::endl;
-              // std::cout << "MOVING IT: " << factor << ", " << difference << std::endl;
-            }
-          }
-          if (!topVertex->isOnFloor()) {
-            k = 1.0;
-            topPosition.y -= k * difference * args->timestep;
-            topVertex->setPos(topPosition);
-          }
-          if (bottomVertex->isOnFloor() && topPosition.y <= bottomPosition.y) {
-            topVertex->setOnFloor();
-            topPosition.y = bottomPosition.y + 0.0001;
-            topVertex->setPos(topPosition);
+          Vertex* top_vertex = edge->getTopVertex();
+          Vertex* bottom_vertex = edge->getBottomVertex();
+          if (top_vertex->isOnFloor()) continue;
+
+          // If the spring is extended
+          float current_distance = glm::distance(top_vertex->getPos(), bottom_vertex->getPos());
+          float original_distance = edge->getOriginalDistance();
+          if (current_distance > original_distance) {
+            // Pull top vertex down a little
+            glm::vec3 top_force = top_vertex->getForce();
+            float k = 10.0;
+            float deformation = (current_distance-original_distance)/original_distance;
+            if (deformation > 1.0) deformation = 1.0;
+            // if (deformation > )
+            // std::cout << deformation << std::endl;
+            top_force += k * deformation * glm::normalize(bottom_vertex->getPos()-top_vertex->getPos());
+            // std::cout << "DOING IT" << std::endl;
+            top_vertex->setForce(top_force);
           }
         }
       }
+
+      // for (unsigned int j = 0; j < vertices.size(); ++j) {
+      //   Vertex* v = vertices[j];
+      //   glm::vec3 force_under(0.0, 0.0, 0.0);
+      //   glm::vec3 pos_vxz = v->getPos();
+      //   pos_vxz.y = 0;
+      //   for (unsigned int k = 0; k < vertices.size(); ++k) {
+      //     if (j == k) continue;
+      //     Vertex* u = vertices[k];
+      //     glm::vec3 pos_uxz = u->getPos();
+      //     pos_uxz.y = 0;
+      //     float distance = glm::distance(pos_vxz, pos_uxz);
+      //     std::cout << distance << std::endl;
+      //   }
+      // }
+
+      for (edgeshashtype::iterator itr = edges.begin(); itr != edges.end(); ++itr) {
+        Edge* edge = itr->second;
+        if (edge->getTopVertex() == edge->getEndVertex()) continue;
+        Vertex* top_vertex = edge->getTopVertex();
+        glm::vec3 force_under = edge->getBottomVertex()->getForce();
+        Edge* next_edge = edges_by_top[edge->getBottomVertex()];
+        int n = 25;
+        while (next_edge != NULL && n > 0) {
+          force_under += next_edge->getBottomVertex()->getForce();
+          next_edge = edges_by_top[edge->getBottomVertex()];
+          n--;
+        }
+        // print_vec(force_under);
+        force_under.x = 0;
+        force_under.z = 0;
+        if (force_under.y > 0) {
+          force_under.y = 0;
+        }
+        top_vertex->setForceUnder(force_under);
+      }
+
+      for (edgeshashtype::iterator itr = edges.begin(); itr != edges.end(); ++itr) {
+        Edge* edge = itr->second;
+        if (edge->getTopVertex() == edge->getEndVertex()) continue;
+        Vertex* v = edge->getStartVertex();
+        Vertex* u = edge->getEndVertex();
+        if (v->getPos()[1] == floor_y && u->getPos()[1] == floor_y) {
+          float current_distance = glm::distance(v->getPos(), u->getPos());
+          float original_distance = edge->getOriginalDistance();
+          float k = 5.0;
+          float deformation = (current_distance-original_distance)/original_distance;
+            if (deformation > 0.25) deformation = 0.25;
+          glm::vec3 force_away = k * deformation * glm::normalize(v->getPos()-u->getPos());
+          force_away.y = 0;
+          v->setForce(v->getForce() + force_away);
+          u->setForce(u->getForce() - force_away);
+        }
+      }
+
+      for (unsigned int j = 0; j < vertices.size(); ++j) {
+        Vertex* v = vertices[j];
+        glm::vec3 force = v->getForce();
+        if (v->isOnFloor()) {
+        } else if (v->isMelting()) {
+          // force += 0.05f * v->getForceUnder();
+        } else {
+          force += 0.25f * v->getForceUnder();
+        }
+        glm::vec3 acceleration = force / v->getMass();
+        glm::vec3 velocity = v->getVelocity();
+        if (v->isOnFloor()) {
+          velocity.y = 0;
+        }
+        velocity += acceleration * args->timestep;
+        glm::vec3 position = v->getPos();
+        position += velocity * args->timestep;
+        v->setVelocity(velocity);
+        v->setPos(position);
+      }
+
+      for (edgeshashtype::iterator itr = edges.begin(); itr != edges.end(); ++itr) {
+        Edge* edge = itr->second;
+        if (edge->getTopVertex() == edge->getEndVertex()) continue;
+        glm::vec3 bottom_position = edge->getBottomVertex()->getPos();
+        glm::vec3 top_position = edge->getTopVertex()->getPos();
+        if (bottom_position.y < floor_y) {
+          bottom_position.y = floor_y + 0.0001;
+          edge->getBottomVertex()->setPos(bottom_position);
+          edge->getBottomVertex()->setOnFloor();
+        }
+        if (top_position.y < floor_y) {
+          if (edge->getBottomVertex()->isOnFloor()) {
+            top_position.y = bottom_position.y + 0.001;
+          } else {
+            top_position.y = floor_y + 0.0001;
+          }
+          edge->getTopVertex()->setPos(top_position);
+          edge->getTopVertex()->setOnFloor();
+        }
+      }
+
+      for (unsigned int j = 0; j < vertices.size(); ++j) {
+        Vertex* v = vertices[j];
+        glm::vec3 p = v->getPos();
+        float size = 1.0;
+        if (p.x < bbox.getMin().x * size) {
+          p.x = bbox.getMin().x * size;
+        }
+        if (p.x > bbox.getMax().x * size) {
+          p.x = bbox.getMax().x * size;
+        }
+        if (p.z < bbox.getMin().z * size) {
+          p.z = bbox.getMin().z * size;
+        }
+        if (p.z > bbox.getMax().z * size) {
+          p.z = bbox.getMax().z * size;
+        }
+        v->setPos(p);
+      }
     }
-  }
-  if (args->animate_heat && !args->heat_removed) {
-    animateHeat();
   }
   setupVBOs();
 }
 
 void Mesh::animateHeat() {
-  float x = heat_position[0];
-  float y = heat_position[1];
-  float z = heat_position[2];
-  float angle = 0.05;
-  heat_position = glm::vec3(x * cos(angle) - z * sin(angle), y, x * sin(angle) + z * cos(angle));
+  // float x = heat_position[0];
+  // float y = heat_position[1];
+  // float z = heat_position[2];
+  // float angle = 0.05;
+  // heat_position = glm::vec3(x * cos(angle) - z * sin(angle), y, x * sin(angle) + z * cos(angle));
 }

@@ -59,6 +59,9 @@ class Edge {
     if (start_vertex->getPos().y > end_vertex->getPos().y) {
       top_vertex = start_vertex;
       bottom_vertex = end_vertex;
+    } else if (start_vertex->getPos().y == end_vertex->getPos().y) {
+      top_vertex = NULL;
+      bottom_vertex = NULL;
     } else {
       top_vertex = end_vertex;
       bottom_vertex = start_vertex;
