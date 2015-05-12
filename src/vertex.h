@@ -43,13 +43,13 @@ class Vertex {
     } else if (mode == 1) {
       if (isMelting()) {
         // Maximum temperature is 600K
-        return (temperature - 293) / 307 * glm::vec4(1.0, 0.0, 0.0, 1.0);
+        return (temperature - material->melting_point) / material->melting_point * glm::vec4(1.0, 0.0, 0.0, 1.0);
       } else {
         return glm::vec4(0.0, 0.0, 1.0, 1.0);
       }
     } else {
-      // Force under mode
-      return glm::length(force_under) * glm::vec4(0.0, 1.0, 0.0, 1.0);
+      // Force mode
+      return glm::length(force) / 100.0f * glm::vec4(0.0, 1.0, 0.0, 1.0);
     }
   }
 

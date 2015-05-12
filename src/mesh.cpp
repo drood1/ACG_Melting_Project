@@ -156,6 +156,8 @@ void Mesh::Load(const std::string &input_file) {
   int vert_count = 0;
   int vert_index = 1;
 
+  print_vec(bbox.getCenter());
+
   // Default values
   material = "default";
   materials[material] = new Material(300, 1, 50, glm::vec4(0.5, 0.5, 0.5, 1.0)); 
@@ -300,6 +302,83 @@ void Mesh::SetupMesh() {
          &mesh_tri_indices[0], GL_STATIC_DRAW);
 }
 
+void Mesh::SetupFloor() {
+  floor_tri_verts.clear();
+  floor_tri_indices.clear();
+  glm::vec4 floor_color(0.9,0.8,0.7,1);
+  glm::vec3 diff = bbox.getMax()-bbox.getMin();
+  // create vertices just a bit bigger than the bounding box
+  min_x = bbox.getMin().x - floor_factor*diff.x;
+  max_x = bbox.getMax().x + floor_factor*diff.x;
+  min_z = bbox.getMin().z - floor_factor*diff.z;
+  max_z = bbox.getMax().z + floor_factor*diff.z;
+  glm::vec3 a = bbox.getMin() + glm::vec3(-floor_factor*diff.x,0,-floor_factor*diff.z);
+  glm::vec3 b = bbox.getMin() + glm::vec3(-floor_factor*diff.x,0, (1+floor_factor)*diff.z);
+  glm::vec3 c = bbox.getMin() + glm::vec3( (1+floor_factor)*diff.x,0, (1+floor_factor)*diff.z);
+  glm::vec3 d = bbox.getMin() + glm::vec3( (1+floor_factor)*diff.x,0,-floor_factor*diff.z);
+  glm::vec3 normal = ComputeNormal(a,c,d);
+  floor_tri_verts.push_back(VBOPosNormalColor(a,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(b,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(c,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(d,normal,floor_color));
+  floor_tri_indices.push_back(VBOIndexedTri(2,1,0));
+  floor_tri_indices.push_back(VBOIndexedTri(3,2,0));
+  float wall_height = 0.25;
+  a = glm::vec3(min_x, bbox.getMin().y, min_z);
+  b = glm::vec3(min_x, bbox.getMin().y + diff.y * wall_height, min_z);
+  c = glm::vec3(max_x, bbox.getMin().y, min_z);
+  d = glm::vec3(max_x, bbox.getMin().y + diff.y * wall_height, min_z);
+  floor_tri_verts.push_back(VBOPosNormalColor(a,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(b,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(c,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(d,normal,floor_color));
+  floor_tri_indices.push_back(VBOIndexedTri(4,5,7));
+  floor_tri_indices.push_back(VBOIndexedTri(7,6,4));
+  a = glm::vec3(min_x, bbox.getMin().y, max_z);
+  b = glm::vec3(min_x, bbox.getMin().y + diff.y * wall_height, max_z);
+  c = glm::vec3(max_x, bbox.getMin().y, max_z);
+  d = glm::vec3(max_x, bbox.getMin().y + diff.y * wall_height, max_z);
+  floor_tri_verts.push_back(VBOPosNormalColor(a,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(b,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(c,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(d,normal,floor_color));
+  floor_tri_indices.push_back(VBOIndexedTri(11,9,8));
+  floor_tri_indices.push_back(VBOIndexedTri(8,10,11));
+  a = glm::vec3(min_x, bbox.getMin().y, min_z);
+  b = glm::vec3(min_x, bbox.getMin().y + diff.y * wall_height, min_z);
+  c = glm::vec3(min_x, bbox.getMin().y, max_z);
+  d = glm::vec3(min_x, bbox.getMin().y + diff.y * wall_height, max_z);
+  floor_tri_verts.push_back(VBOPosNormalColor(a,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(b,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(c,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(d,normal,floor_color));
+  floor_tri_indices.push_back(VBOIndexedTri(15,13,12));
+  floor_tri_indices.push_back(VBOIndexedTri(12,14,15));
+  a = glm::vec3(max_x, bbox.getMin().y, min_z);
+  b = glm::vec3(max_x, bbox.getMin().y + diff.y * wall_height, min_z);
+  c = glm::vec3(max_x, bbox.getMin().y, max_z);
+  d = glm::vec3(max_x, bbox.getMin().y + diff.y * wall_height, max_z);
+  floor_tri_verts.push_back(VBOPosNormalColor(a,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(b,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(c,normal,floor_color));
+  floor_tri_verts.push_back(VBOPosNormalColor(d,normal,floor_color));
+  floor_tri_indices.push_back(VBOIndexedTri(16,17,19));
+  floor_tri_indices.push_back(VBOIndexedTri(18,16,19));
+  glBindBuffer(GL_ARRAY_BUFFER,floor_tri_verts_VBO); 
+  glBufferData(GL_ARRAY_BUFFER,
+         sizeof(VBOPosNormalColor) * floor_tri_verts.size(), 
+         &floor_tri_verts[0],
+         GL_STATIC_DRAW); 
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,floor_tri_indices_VBO); 
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+         sizeof(VBOIndexedTri) * floor_tri_indices.size(),
+         &floor_tri_indices[0], GL_STATIC_DRAW);
+  max_x -= 0.0001;
+  min_x += 0.0001;
+  max_z -= 0.0001;
+  min_z += 0.0001;
+}
+
 void Mesh::SetupHeat() {
   heat_vert.clear();
   for (unsigned int i = 0; i < heat_sources.size(); ++i) {
@@ -319,6 +398,8 @@ void Mesh::initializeVBOs() {
   glBindVertexArray(mesh_VAO);
   glGenBuffers(1, &mesh_tri_verts_VBO);
   glGenBuffers(1, &mesh_tri_indices_VBO);
+  glGenBuffers(1, &floor_tri_verts_VBO);
+  glGenBuffers(1, &floor_tri_indices_VBO);
   glGenBuffers(1, &heat_vert_VBO);
 
   // and the data to pass to the shaders
@@ -338,6 +419,7 @@ void Mesh::setupVBOs() {
   HandleGLError("enter setupVBOs");
   SetupMesh();
   SetupHeat();
+  SetupFloor();
   HandleGLError("leaving setupVBOs");
 }
 
@@ -392,6 +474,21 @@ void Mesh::drawVBOs(const glm::mat4 &ProjectionMatrix,
   glDisableVertexAttribArray(2);
   HandleGLError("enter draw heat");
 
+  HandleGLError("enter draw floor");
+  glBindBuffer(GL_ARRAY_BUFFER,floor_tri_verts_VBO); 
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,floor_tri_indices_VBO); 
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(VBOPosNormalColor),(void*)0);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(VBOPosNormalColor),(void*)sizeof(glm::vec3) );
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 3, GL_FLOAT,GL_FALSE,sizeof(VBOPosNormalColor), (void*)(sizeof(glm::vec3)*2));
+  glDrawElements(GL_TRIANGLES, floor_tri_indices.size()*3,GL_UNSIGNED_INT, 0);
+  glDisableVertexAttribArray(0);
+  glDisableVertexAttribArray(1);
+  glDisableVertexAttribArray(2);
+  HandleGLError("leaving draw floor");
+
   HandleGLError("leaving drawVBOs");
 }
 
@@ -399,6 +496,8 @@ void Mesh::cleanupVBOs() {
   glDeleteBuffers(1, &mesh_VAO);
   glDeleteBuffers(1, &mesh_tri_verts_VBO);
   glDeleteBuffers(1, &mesh_tri_indices_VBO);
+  glDeleteBuffers(1, &floor_tri_verts_VBO);
+  glDeleteBuffers(1, &floor_tri_indices_VBO);
   glDeleteBuffers(1, &heat_vert_VBO);
 }
 
@@ -519,8 +618,11 @@ void Mesh::animate() {
           float original_distance = edge->getOriginalDistance();
           float k = 5.0;
           float deformation = (current_distance-original_distance)/original_distance;
-            if (deformation > 0.25) deformation = 0.25;
-          glm::vec3 force_away = k * deformation * glm::normalize(v->getPos()-u->getPos());
+          if (deformation > 0.25) deformation = 0.25;
+          Triangle* tri = edge->getTriangle();
+          // glm::vec3 force_normal = glm::normalize(v->getPos()-u->getPos());
+          glm::vec3 force_normal = ComputeNormal((*tri)[0]->getOriginalPos(), (*tri)[1]->getOriginalPos(), (*tri)[2]->getOriginalPos());
+          glm::vec3 force_away = k * deformation * force_normal;
           force_away.y = 0;
           v->setForce(v->getForce() + force_away);
           u->setForce(u->getForce() - force_away);
@@ -534,14 +636,14 @@ void Mesh::animate() {
         } else if (v->isMelting()) {
           // force += 0.05f * v->getForceUnder();
         } else {
-          force += 0.25f * v->getForceUnder();
+          force += 0.1f * v->getForceUnder();
         }
         glm::vec3 acceleration = force / v->getMass();
         glm::vec3 velocity = v->getVelocity();
+        velocity += acceleration * args->timestep;
         if (v->isOnFloor()) {
           velocity.y = 0;
         }
-        velocity += acceleration * args->timestep;
         glm::vec3 position = v->getPos();
         position += velocity * args->timestep;
         v->setVelocity(velocity);
@@ -554,15 +656,15 @@ void Mesh::animate() {
         glm::vec3 bottom_position = edge->getBottomVertex()->getPos();
         glm::vec3 top_position = edge->getTopVertex()->getPos();
         if (bottom_position.y < floor_y) {
-          bottom_position.y = floor_y + 0.0001;
+          bottom_position.y = floor_y + 0.001;
           edge->getBottomVertex()->setPos(bottom_position);
           edge->getBottomVertex()->setOnFloor();
         }
         if (top_position.y < floor_y) {
           if (edge->getBottomVertex()->isOnFloor()) {
-            top_position.y = bottom_position.y + 0.001;
+            top_position.y = bottom_position.y + 0.005;
           } else {
-            top_position.y = floor_y + 0.0001;
+            top_position.y = floor_y + 0.001;
           }
           edge->getTopVertex()->setPos(top_position);
           edge->getTopVertex()->setOnFloor();
@@ -573,17 +675,17 @@ void Mesh::animate() {
         Vertex* v = vertices[j];
         glm::vec3 p = v->getPos();
         float size = 1.0;
-        if (p.x < bbox.getMin().x * size) {
-          p.x = bbox.getMin().x * size;
+        if (p.x < min_x) {
+          p.x = min_x;
         }
-        if (p.x > bbox.getMax().x * size) {
-          p.x = bbox.getMax().x * size;
+        if (p.x > max_x) {
+          p.x = max_x;
         }
-        if (p.z < bbox.getMin().z * size) {
-          p.z = bbox.getMin().z * size;
+        if (p.z < min_z) {
+          p.z = min_z;
         }
-        if (p.z > bbox.getMax().z * size) {
-          p.z = bbox.getMax().z * size;
+        if (p.z > max_z) {
+          p.z = max_z;
         }
         v->setPos(p);
       }

@@ -228,7 +228,7 @@ void GLCanvas::keyboardCB(GLFWwindow* window, int key, int scancode, int action,
       } else if (args->color_mode == 1) {
         std::cout << "Changed to heat color" << std::endl;
       } else if (args->color_mode == 2) {
-        std::cout << "Changed to force under color" << std::endl;
+        std::cout << "Changed to force color" << std::endl;
       } 
       break;
     case 'h': case 'H':

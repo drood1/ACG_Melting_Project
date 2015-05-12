@@ -49,10 +49,6 @@ class Mesh {
     // heat_position -= glm::vec3(1000.0, 1000.0, 1000.0);
   }
 
-  float calculateHeat(float distance, float k) {
-    return 1.0 / (distance * distance) / k;
-  }
-
   // ==================================================
   // PARENT VERTEX RELATIONSHIPS (used for subdivision)
   // this creates a relationship between 3 vertices (2 parents, 1 child)
@@ -85,6 +81,7 @@ class Mesh {
   void initializeVBOs();
   void setupVBOs();
   void SetupMesh();
+  void SetupFloor();
   void SetupHeat();
   void drawVBOs(const glm::mat4 &ProjectionMatrix,
     const glm::mat4 &ViewMatrix, const glm::mat4 &ModelMatrix);
@@ -111,6 +108,8 @@ class Mesh {
   float floor_y;
   float heat_loss;
   float room_temperature = 293.0f;
+  float floor_factor = 0.05;
+  float min_x, max_x, min_z, max_z;
   std::map<std::string, Material*> materials;
   std::string material;
   std::vector<HeatSource*> heat_sources;
@@ -119,10 +118,14 @@ class Mesh {
   GLuint mesh_VAO;
   GLuint mesh_tri_verts_VBO;
   GLuint mesh_tri_indices_VBO;
+  GLuint floor_tri_verts_VBO;
+  GLuint floor_tri_indices_VBO;
   GLuint heat_vert_VBO;
 
   std::vector<VBOPosNormalColor> mesh_tri_verts;
   std::vector<VBOIndexedTri> mesh_tri_indices;
+  std::vector<VBOPosNormalColor> floor_tri_verts;
+  std::vector<VBOIndexedTri> floor_tri_indices;
   std::vector<VBOPosNormalColor> heat_vert;
 };
 
